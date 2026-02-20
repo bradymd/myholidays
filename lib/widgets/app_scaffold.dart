@@ -144,7 +144,7 @@ class AppScaffold extends StatelessWidget {
   }) {
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: AppColors.primaryLight.withValues(alpha: 0.7),
+        color: AppColors.primary.withValues(alpha: 0.75),
         shape: BoxShape.circle,
         boxShadow: const [
           BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2)),
@@ -285,7 +285,7 @@ class _OverlayMenuButton extends StatelessWidget {
 
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: AppColors.primaryLight.withValues(alpha: 0.7),
+        color: AppColors.primary.withValues(alpha: 0.75),
         shape: BoxShape.circle,
         boxShadow: const [
           BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2)),

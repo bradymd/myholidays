@@ -112,10 +112,12 @@ class _AddEditCarHireScreenState extends ConsumerState<AddEditCarHireScreen> {
         _dropoffDateController.text = _displayDate(hire.dropoffDate);
         _dropoffTimeController.text = hire.dropoffTime;
         _driversController.text = hire.drivers;
-        _depositController.text =
-            hire.deposit > 0 ? hire.deposit.toString() : '';
-        _totalCostController.text =
-            hire.totalCost > 0 ? hire.totalCost.toString() : '';
+        _depositController.text = hire.deposit > 0
+            ? hire.deposit.toString()
+            : '';
+        _totalCostController.text = hire.totalCost > 0
+            ? hire.totalCost.toString()
+            : '';
         _bookingRefController.text = hire.bookingReference;
         _notesController.text = hire.notes;
       }
@@ -132,7 +134,10 @@ class _AddEditCarHireScreenState extends ConsumerState<AddEditCarHireScreen> {
     required ValueChanged<String> onDatePicked,
     String? defaultDate,
   }) async {
-    final initial = DateTime.tryParse(currentIsoDate) ?? DateTime.tryParse(defaultDate ?? '') ?? DateTime.now();
+    final initial =
+        DateTime.tryParse(currentIsoDate) ??
+        DateTime.tryParse(defaultDate ?? '') ??
+        DateTime.now();
     final picked = await showDatePicker(
       context: context,
       initialDate: initial,
@@ -171,8 +176,7 @@ class _AddEditCarHireScreenState extends ConsumerState<AddEditCarHireScreen> {
       notes: _notesController.text.trim(),
     );
 
-    final notifier =
-        ref.read(carHiresProvider(widget.holidayId).notifier);
+    final notifier = ref.read(carHiresProvider(widget.holidayId).notifier);
     if (_isEdit) {
       await notifier.updateCarHire(carHire);
     } else {
@@ -210,211 +214,258 @@ class _AddEditCarHireScreenState extends ConsumerState<AddEditCarHireScreen> {
     return Stack(
       children: [
         SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(16),
           child: Form(
             key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-            // Company
-            Text('Company', style: AppTextStyles.label),
-            const SizedBox(height: 6),
-            TextFormField(
-              controller: _companyController,
-              decoration:
-                  const InputDecoration(hintText: 'e.g. Hertz, Enterprise'),
-              textCapitalization: TextCapitalization.words,
-              validator: (v) =>
-                  (v == null || v.trim().isEmpty) ? 'Company is required' : null,
-            ),
-            const SizedBox(height: 16),
+            child: Card(
+              clipBehavior: Clip.antiAlias,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Ink(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Colors.white, Color(0x0FE65100)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // Company
+                      Text('Company', style: AppTextStyles.label),
+                      const SizedBox(height: 6),
+                      TextFormField(
+                        controller: _companyController,
+                        decoration: const InputDecoration(
+                          hintText: 'e.g. Hertz, Enterprise',
+                        ),
+                        textCapitalization: TextCapitalization.words,
+                        validator: (v) => (v == null || v.trim().isEmpty)
+                            ? 'Company is required'
+                            : null,
+                      ),
+                      const SizedBox(height: 16),
 
-            // Pickup Location
-            Text('Pickup Location', style: AppTextStyles.label),
-            const SizedBox(height: 6),
-            TextFormField(
-              controller: _pickupLocationController,
-              decoration:
-                  const InputDecoration(hintText: 'e.g. Airport terminal'),
-              textCapitalization: TextCapitalization.words,
-            ),
-            const SizedBox(height: 16),
+                      // Pickup Location
+                      Text('Pickup Location', style: AppTextStyles.label),
+                      const SizedBox(height: 6),
+                      TextFormField(
+                        controller: _pickupLocationController,
+                        decoration: const InputDecoration(
+                          hintText: 'e.g. Airport terminal',
+                        ),
+                        textCapitalization: TextCapitalization.words,
+                      ),
+                      const SizedBox(height: 16),
 
-            // Pickup Date
-            Text('Pickup Date', style: AppTextStyles.label),
-            const SizedBox(height: 6),
-            TextFormField(
-              controller: _pickupDateController,
-              decoration: InputDecoration(
-                hintText: 'DD/MM/YYYY',
-                suffixIcon: IconButton(
-                  icon: const Icon(Icons.calendar_today_rounded, size: 20),
-                  onPressed: () => _pickDate(
-                    controller: _pickupDateController,
-                    currentIsoDate: _pickupDate,
-                    onDatePicked: (iso) => _pickupDate = iso,
-                    defaultDate: _holidayStartDate,
+                      // Pickup Date
+                      Text('Pickup Date', style: AppTextStyles.label),
+                      const SizedBox(height: 6),
+                      TextFormField(
+                        controller: _pickupDateController,
+                        decoration: InputDecoration(
+                          hintText: 'DD/MM/YYYY',
+                          suffixIcon: IconButton(
+                            icon: const Icon(
+                              Icons.calendar_today_rounded,
+                              size: 20,
+                            ),
+                            onPressed: () => _pickDate(
+                              controller: _pickupDateController,
+                              currentIsoDate: _pickupDate,
+                              onDatePicked: (iso) => _pickupDate = iso,
+                              defaultDate: _holidayStartDate,
+                            ),
+                          ),
+                        ),
+                        readOnly: true,
+                        onTap: () => _pickDate(
+                          controller: _pickupDateController,
+                          currentIsoDate: _pickupDate,
+                          onDatePicked: (iso) => _pickupDate = iso,
+                          defaultDate: _holidayStartDate,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Pickup Time
+                      Text('Pickup Time', style: AppTextStyles.label),
+                      const SizedBox(height: 6),
+                      TextFormField(
+                        controller: _pickupTimeController,
+                        decoration: const InputDecoration(
+                          hintText: 'e.g. 10:00',
+                        ),
+                        textInputAction: TextInputAction.next,
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Dropoff Location
+                      Text('Dropoff Location', style: AppTextStyles.label),
+                      const SizedBox(height: 6),
+                      TextFormField(
+                        controller: _dropoffLocationController,
+                        decoration: const InputDecoration(
+                          hintText: 'e.g. City centre office',
+                        ),
+                        textCapitalization: TextCapitalization.words,
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Dropoff Date
+                      Text('Dropoff Date', style: AppTextStyles.label),
+                      const SizedBox(height: 6),
+                      TextFormField(
+                        controller: _dropoffDateController,
+                        decoration: InputDecoration(
+                          hintText: 'DD/MM/YYYY',
+                          suffixIcon: IconButton(
+                            icon: const Icon(
+                              Icons.calendar_today_rounded,
+                              size: 20,
+                            ),
+                            onPressed: () => _pickDate(
+                              controller: _dropoffDateController,
+                              currentIsoDate: _dropoffDate,
+                              onDatePicked: (iso) => _dropoffDate = iso,
+                              defaultDate: _holidayEndDate,
+                            ),
+                          ),
+                        ),
+                        readOnly: true,
+                        onTap: () => _pickDate(
+                          controller: _dropoffDateController,
+                          currentIsoDate: _dropoffDate,
+                          onDatePicked: (iso) => _dropoffDate = iso,
+                          defaultDate: _holidayEndDate,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Dropoff Time
+                      Text('Dropoff Time', style: AppTextStyles.label),
+                      const SizedBox(height: 6),
+                      TextFormField(
+                        controller: _dropoffTimeController,
+                        decoration: const InputDecoration(
+                          hintText: 'e.g. 18:00',
+                        ),
+                        textInputAction: TextInputAction.next,
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Drivers
+                      Text('Drivers', style: AppTextStyles.label),
+                      const SizedBox(height: 6),
+                      TextFormField(
+                        controller: _driversController,
+                        decoration: const InputDecoration(
+                          hintText: 'Driver name(s)',
+                        ),
+                        textCapitalization: TextCapitalization.words,
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Deposit
+                      Text('Deposit', style: AppTextStyles.label),
+                      const SizedBox(height: 6),
+                      TextFormField(
+                        controller: _depositController,
+                        decoration: const InputDecoration(
+                          hintText: '0.00',
+                          prefixText: '\u00A3 ',
+                        ),
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Total Cost
+                      Text('Total Cost', style: AppTextStyles.label),
+                      const SizedBox(height: 6),
+                      TextFormField(
+                        controller: _totalCostController,
+                        decoration: const InputDecoration(
+                          hintText: '0.00',
+                          prefixText: '\u00A3 ',
+                        ),
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Booking Reference
+                      Text('Booking Reference', style: AppTextStyles.label),
+                      const SizedBox(height: 6),
+                      TextFormField(
+                        controller: _bookingRefController,
+                        decoration: const InputDecoration(
+                          hintText: 'Reference number',
+                        ),
+                        textCapitalization: TextCapitalization.characters,
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Notes
+                      Text('Notes', style: AppTextStyles.label),
+                      const SizedBox(height: 6),
+                      TextFormField(
+                        controller: _notesController,
+                        decoration: const InputDecoration(
+                          hintText: 'Optional notes',
+                        ),
+                        maxLines: 3,
+                        textCapitalization: TextCapitalization.sentences,
+                      ),
+
+                      // Document attachments
+                      DocumentAttachments(
+                        parentType: 'carHire',
+                        parentId: _entityId,
+                      ),
+
+                      const SizedBox(height: 80),
+                    ],
                   ),
                 ),
               ),
-              readOnly: true,
-              onTap: () => _pickDate(
-                controller: _pickupDateController,
-                currentIsoDate: _pickupDate,
-                onDatePicked: (iso) => _pickupDate = iso,
-                defaultDate: _holidayStartDate,
-              ),
             ),
-            const SizedBox(height: 16),
-
-            // Pickup Time
-            Text('Pickup Time', style: AppTextStyles.label),
-            const SizedBox(height: 6),
-            TextFormField(
-              controller: _pickupTimeController,
-              decoration: const InputDecoration(hintText: 'e.g. 10:00'),
-              textInputAction: TextInputAction.next,
-            ),
-            const SizedBox(height: 16),
-
-            // Dropoff Location
-            Text('Dropoff Location', style: AppTextStyles.label),
-            const SizedBox(height: 6),
-            TextFormField(
-              controller: _dropoffLocationController,
-              decoration:
-                  const InputDecoration(hintText: 'e.g. City centre office'),
-              textCapitalization: TextCapitalization.words,
-            ),
-            const SizedBox(height: 16),
-
-            // Dropoff Date
-            Text('Dropoff Date', style: AppTextStyles.label),
-            const SizedBox(height: 6),
-            TextFormField(
-              controller: _dropoffDateController,
-              decoration: InputDecoration(
-                hintText: 'DD/MM/YYYY',
-                suffixIcon: IconButton(
-                  icon: const Icon(Icons.calendar_today_rounded, size: 20),
-                  onPressed: () => _pickDate(
-                    controller: _dropoffDateController,
-                    currentIsoDate: _dropoffDate,
-                    onDatePicked: (iso) => _dropoffDate = iso,
-                    defaultDate: _holidayEndDate,
-                  ),
+          ),
+        ),
+        Positioned(
+          right: 16,
+          bottom: 16,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: AppColors.primary.withValues(alpha: 0.75),
+              shape: BoxShape.circle,
+              boxShadow: const [
+                BoxShadow(
+                  color: Colors.black12,
+                  blurRadius: 4,
+                  offset: Offset(0, 2),
                 ),
+              ],
+            ),
+            child: IconButton(
+              onPressed: _saving ? null : _save,
+              tooltip: _isEdit ? 'Save' : 'Add',
+              icon: const Icon(
+                Icons.check_rounded,
+                color: Colors.white,
+                size: 22,
               ),
-              readOnly: true,
-              onTap: () => _pickDate(
-                controller: _dropoffDateController,
-                currentIsoDate: _dropoffDate,
-                onDatePicked: (iso) => _dropoffDate = iso,
-                defaultDate: _holidayEndDate,
-              ),
+              padding: const EdgeInsets.all(10),
+              constraints: const BoxConstraints(),
             ),
-            const SizedBox(height: 16),
-
-            // Dropoff Time
-            Text('Dropoff Time', style: AppTextStyles.label),
-            const SizedBox(height: 6),
-            TextFormField(
-              controller: _dropoffTimeController,
-              decoration: const InputDecoration(hintText: 'e.g. 18:00'),
-              textInputAction: TextInputAction.next,
-            ),
-            const SizedBox(height: 16),
-
-            // Drivers
-            Text('Drivers', style: AppTextStyles.label),
-            const SizedBox(height: 6),
-            TextFormField(
-              controller: _driversController,
-              decoration:
-                  const InputDecoration(hintText: 'Driver name(s)'),
-              textCapitalization: TextCapitalization.words,
-            ),
-            const SizedBox(height: 16),
-
-            // Deposit
-            Text('Deposit', style: AppTextStyles.label),
-            const SizedBox(height: 6),
-            TextFormField(
-              controller: _depositController,
-              decoration: const InputDecoration(
-                hintText: '0.00',
-                prefixText: '\u00A3 ',
-              ),
-              keyboardType:
-                  const TextInputType.numberWithOptions(decimal: true),
-            ),
-            const SizedBox(height: 16),
-
-            // Total Cost
-            Text('Total Cost', style: AppTextStyles.label),
-            const SizedBox(height: 6),
-            TextFormField(
-              controller: _totalCostController,
-              decoration: const InputDecoration(
-                hintText: '0.00',
-                prefixText: '\u00A3 ',
-              ),
-              keyboardType:
-                  const TextInputType.numberWithOptions(decimal: true),
-            ),
-            const SizedBox(height: 16),
-
-            // Booking Reference
-            Text('Booking Reference', style: AppTextStyles.label),
-            const SizedBox(height: 6),
-            TextFormField(
-              controller: _bookingRefController,
-              decoration: const InputDecoration(hintText: 'Reference number'),
-              textCapitalization: TextCapitalization.characters,
-            ),
-            const SizedBox(height: 16),
-
-            // Notes
-            Text('Notes', style: AppTextStyles.label),
-            const SizedBox(height: 6),
-            TextFormField(
-              controller: _notesController,
-              decoration: const InputDecoration(hintText: 'Optional notes'),
-              maxLines: 3,
-              textCapitalization: TextCapitalization.sentences,
-            ),
-
-            // Document attachments
-            DocumentAttachments(
-              parentType: 'carHire',
-              parentId: _entityId,
-            ),
-
-            const SizedBox(height: 80),
-          ],
+          ),
         ),
-      ),
-    ),
-    Positioned(
-      right: 16,
-      bottom: 16,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: AppColors.primaryLight.withValues(alpha: 0.7),
-          shape: BoxShape.circle,
-          boxShadow: const [
-            BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2)),
-          ],
-        ),
-        child: IconButton(
-          onPressed: _saving ? null : _save,
-          tooltip: _isEdit ? 'Save' : 'Add',
-          icon: const Icon(Icons.check_rounded, color: Colors.white, size: 22),
-          padding: const EdgeInsets.all(10),
-          constraints: const BoxConstraints(),
-        ),
-      ),
-    ),
       ],
     );
   }

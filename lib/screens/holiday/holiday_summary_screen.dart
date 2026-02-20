@@ -61,7 +61,8 @@ class _HolidaySummaryScreenState extends ConsumerState<HolidaySummaryScreen> {
 
     if (h.startDate.isNotEmpty || h.endDate.isNotEmpty) {
       buf.writeln(
-          'Dates: ${formatDateUK(h.startDate)} - ${formatDateUK(h.endDate)}');
+        'Dates: ${formatDateUK(h.startDate)} - ${formatDateUK(h.endDate)}',
+      );
       buf.writeln();
     }
 
@@ -85,7 +86,8 @@ class _HolidaySummaryScreenState extends ConsumerState<HolidaySummaryScreen> {
         if (a.address.isNotEmpty) buf.writeln('  Address: ${a.address}');
         if (a.checkIn.isNotEmpty || a.checkOut.isNotEmpty) {
           buf.writeln(
-              '  Dates: ${formatDateUK(a.checkIn)} - ${formatDateUK(a.checkOut)}');
+            '  Dates: ${formatDateUK(a.checkIn)} - ${formatDateUK(a.checkOut)}',
+          );
         }
         if (a.confirmationNumber.isNotEmpty) {
           buf.writeln('  Confirmation: ${a.confirmationNumber}');
@@ -120,7 +122,8 @@ class _HolidaySummaryScreenState extends ConsumerState<HolidaySummaryScreen> {
             ? '${leg.mode[0].toUpperCase()}${leg.mode.substring(1)}'
             : '';
         buf.writeln(
-            '  $typeLabel${modeLabel.isNotEmpty ? ' ($modeLabel)' : ''}');
+          '  $typeLabel${modeLabel.isNotEmpty ? ' ($modeLabel)' : ''}',
+        );
         if (leg.from.isNotEmpty || leg.to.isNotEmpty) {
           buf.writeln('  ${leg.from} -> ${leg.to}');
         }
@@ -208,7 +211,8 @@ class _HolidaySummaryScreenState extends ConsumerState<HolidaySummaryScreen> {
       buf.writeln('-'.padRight(30, '-'));
       for (final day in _itineraryDays) {
         buf.writeln(
-            '  Day ${day.dayNumber}${day.title.isNotEmpty ? ' - ${day.title}' : ''}');
+          '  Day ${day.dayNumber}${day.title.isNotEmpty ? ' - ${day.title}' : ''}',
+        );
         if (day.date.isNotEmpty) {
           buf.writeln('  ${formatDateUK(day.date)}');
         }
@@ -319,9 +323,7 @@ class _HolidaySummaryScreenState extends ConsumerState<HolidaySummaryScreen> {
                   width: 100,
                   child: pw.Text('$label:', style: labelStyle),
                 ),
-                pw.Expanded(
-                  child: pw.Text(value, style: valueStyle),
-                ),
+                pw.Expanded(child: pw.Text(value, style: valueStyle)),
               ],
             ),
           );
@@ -393,10 +395,12 @@ class _HolidaySummaryScreenState extends ConsumerState<HolidaySummaryScreen> {
         if (_travelers.isNotEmpty) {
           content.add(pdfSectionHeader('Travellers'));
           for (final t in _travelers) {
-            content.add(pdfCard([
-              pdfRow('Name', t.name),
-              if (t.notes.isNotEmpty) pdfRow('Notes', t.notes),
-            ]));
+            content.add(
+              pdfCard([
+                pdfRow('Name', t.name),
+                if (t.notes.isNotEmpty) pdfRow('Notes', t.notes),
+              ]),
+            );
           }
         }
 
@@ -404,25 +408,29 @@ class _HolidaySummaryScreenState extends ConsumerState<HolidaySummaryScreen> {
         if (_accommodations.isNotEmpty) {
           content.add(pdfSectionHeader('Accommodation'));
           for (final a in _accommodations) {
-            content.add(pdfCard([
-              pdfRow('Name', a.name),
-              if (a.address.isNotEmpty) pdfRow('Address', a.address),
-              if (a.checkIn.isNotEmpty || a.checkOut.isNotEmpty)
-                pdfRow('Dates',
-                    '${formatDateUK(a.checkIn)} - ${formatDateUK(a.checkOut)}'),
-              if (a.confirmationNumber.isNotEmpty)
-                pdfRow('Confirmation', a.confirmationNumber),
-              if (a.cost > 0) pdfRow('Cost', formatGBP(a.cost)),
-              if (a.depositPaid > 0)
-                pdfRow('Deposit Paid', formatGBP(a.depositPaid)),
-              if (a.balanceDue > 0)
-                pdfRow('Balance Due', formatGBP(a.balanceDue)),
-              if (a.balanceDueDate.isNotEmpty)
-                pdfRow('Due Date', formatDateUK(a.balanceDueDate)),
-              if (a.balancePaidDate.isNotEmpty)
-                pdfRow('Paid Date', formatDateUK(a.balancePaidDate)),
-              if (a.notes.isNotEmpty) pdfRow('Notes', a.notes),
-            ]));
+            content.add(
+              pdfCard([
+                pdfRow('Name', a.name),
+                if (a.address.isNotEmpty) pdfRow('Address', a.address),
+                if (a.checkIn.isNotEmpty || a.checkOut.isNotEmpty)
+                  pdfRow(
+                    'Dates',
+                    '${formatDateUK(a.checkIn)} - ${formatDateUK(a.checkOut)}',
+                  ),
+                if (a.confirmationNumber.isNotEmpty)
+                  pdfRow('Confirmation', a.confirmationNumber),
+                if (a.cost > 0) pdfRow('Cost', formatGBP(a.cost)),
+                if (a.depositPaid > 0)
+                  pdfRow('Deposit Paid', formatGBP(a.depositPaid)),
+                if (a.balanceDue > 0)
+                  pdfRow('Balance Due', formatGBP(a.balanceDue)),
+                if (a.balanceDueDate.isNotEmpty)
+                  pdfRow('Due Date', formatDateUK(a.balanceDueDate)),
+                if (a.balancePaidDate.isNotEmpty)
+                  pdfRow('Paid Date', formatDateUK(a.balancePaidDate)),
+                if (a.notes.isNotEmpty) pdfRow('Notes', a.notes),
+              ]),
+            );
           }
         }
 
@@ -436,23 +444,31 @@ class _HolidaySummaryScreenState extends ConsumerState<HolidaySummaryScreen> {
             final modeLabel = leg.mode.isNotEmpty
                 ? '${leg.mode[0].toUpperCase()}${leg.mode.substring(1)}'
                 : '';
-            content.add(pdfCard([
-              pdfRow('Type',
-                  '$typeLabel${modeLabel.isNotEmpty ? ' ($modeLabel)' : ''}'),
-              if (leg.from.isNotEmpty || leg.to.isNotEmpty)
-                pdfRow('Route', '${leg.from} -> ${leg.to}'),
-              if (leg.departureDate.isNotEmpty)
-                pdfRow('Depart',
-                    '${formatDateUK(leg.departureDate)}${leg.departureTime.isNotEmpty ? ' ${leg.departureTime}' : ''}'),
-              if (leg.arrivalDate.isNotEmpty)
-                pdfRow('Arrive',
-                    '${formatDateUK(leg.arrivalDate)}${leg.arrivalTime.isNotEmpty ? ' ${leg.arrivalTime}' : ''}'),
-              if (leg.carrier.isNotEmpty) pdfRow('Carrier', leg.carrier),
-              if (leg.bookingReference.isNotEmpty)
-                pdfRow('Booking Ref', leg.bookingReference),
-              if (leg.cost > 0) pdfRow('Cost', formatGBP(leg.cost)),
-              if (leg.notes.isNotEmpty) pdfRow('Notes', leg.notes),
-            ]));
+            content.add(
+              pdfCard([
+                pdfRow(
+                  'Type',
+                  '$typeLabel${modeLabel.isNotEmpty ? ' ($modeLabel)' : ''}',
+                ),
+                if (leg.from.isNotEmpty || leg.to.isNotEmpty)
+                  pdfRow('Route', '${leg.from} -> ${leg.to}'),
+                if (leg.departureDate.isNotEmpty)
+                  pdfRow(
+                    'Depart',
+                    '${formatDateUK(leg.departureDate)}${leg.departureTime.isNotEmpty ? ' ${leg.departureTime}' : ''}',
+                  ),
+                if (leg.arrivalDate.isNotEmpty)
+                  pdfRow(
+                    'Arrive',
+                    '${formatDateUK(leg.arrivalDate)}${leg.arrivalTime.isNotEmpty ? ' ${leg.arrivalTime}' : ''}',
+                  ),
+                if (leg.carrier.isNotEmpty) pdfRow('Carrier', leg.carrier),
+                if (leg.bookingReference.isNotEmpty)
+                  pdfRow('Booking Ref', leg.bookingReference),
+                if (leg.cost > 0) pdfRow('Cost', formatGBP(leg.cost)),
+                if (leg.notes.isNotEmpty) pdfRow('Notes', leg.notes),
+              ]),
+            );
           }
         }
 
@@ -460,21 +476,28 @@ class _HolidaySummaryScreenState extends ConsumerState<HolidaySummaryScreen> {
         if (_carHires.isNotEmpty) {
           content.add(pdfSectionHeader('Car Hire'));
           for (final c in _carHires) {
-            content.add(pdfCard([
-              if (c.company.isNotEmpty) pdfRow('Company', c.company),
-              if (c.pickupLocation.isNotEmpty || c.pickupDate.isNotEmpty)
-                pdfRow('Pickup',
-                    '${c.pickupLocation}${c.pickupDate.isNotEmpty ? ' on ${formatDateUK(c.pickupDate)}' : ''}${c.pickupTime.isNotEmpty ? ' at ${c.pickupTime}' : ''}'),
-              if (c.dropoffLocation.isNotEmpty || c.dropoffDate.isNotEmpty)
-                pdfRow('Dropoff',
-                    '${c.dropoffLocation}${c.dropoffDate.isNotEmpty ? ' on ${formatDateUK(c.dropoffDate)}' : ''}${c.dropoffTime.isNotEmpty ? ' at ${c.dropoffTime}' : ''}'),
-              if (c.drivers.isNotEmpty) pdfRow('Drivers', c.drivers),
-              if (c.bookingReference.isNotEmpty)
-                pdfRow('Booking Ref', c.bookingReference),
-              if (c.deposit > 0) pdfRow('Deposit', formatGBP(c.deposit)),
-              if (c.totalCost > 0) pdfRow('Total Cost', formatGBP(c.totalCost)),
-              if (c.notes.isNotEmpty) pdfRow('Notes', c.notes),
-            ]));
+            content.add(
+              pdfCard([
+                if (c.company.isNotEmpty) pdfRow('Company', c.company),
+                if (c.pickupLocation.isNotEmpty || c.pickupDate.isNotEmpty)
+                  pdfRow(
+                    'Pickup',
+                    '${c.pickupLocation}${c.pickupDate.isNotEmpty ? ' on ${formatDateUK(c.pickupDate)}' : ''}${c.pickupTime.isNotEmpty ? ' at ${c.pickupTime}' : ''}',
+                  ),
+                if (c.dropoffLocation.isNotEmpty || c.dropoffDate.isNotEmpty)
+                  pdfRow(
+                    'Dropoff',
+                    '${c.dropoffLocation}${c.dropoffDate.isNotEmpty ? ' on ${formatDateUK(c.dropoffDate)}' : ''}${c.dropoffTime.isNotEmpty ? ' at ${c.dropoffTime}' : ''}',
+                  ),
+                if (c.drivers.isNotEmpty) pdfRow('Drivers', c.drivers),
+                if (c.bookingReference.isNotEmpty)
+                  pdfRow('Booking Ref', c.bookingReference),
+                if (c.deposit > 0) pdfRow('Deposit', formatGBP(c.deposit)),
+                if (c.totalCost > 0)
+                  pdfRow('Total Cost', formatGBP(c.totalCost)),
+                if (c.notes.isNotEmpty) pdfRow('Notes', c.notes),
+              ]),
+            );
           }
         }
 
@@ -482,17 +505,21 @@ class _HolidaySummaryScreenState extends ConsumerState<HolidaySummaryScreen> {
         if (_activities.isNotEmpty) {
           content.add(pdfSectionHeader('Activities'));
           for (final a in _activities) {
-            content.add(pdfCard([
-              pdfRow('Name', a.name),
-              if (a.date.isNotEmpty)
-                pdfRow('Date',
-                    '${formatDateUK(a.date)}${a.time.isNotEmpty ? ' at ${a.time}' : ''}'),
-              if (a.location.isNotEmpty) pdfRow('Location', a.location),
-              if (a.bookingReference.isNotEmpty)
-                pdfRow('Booking Ref', a.bookingReference),
-              if (a.cost > 0) pdfRow('Cost', formatGBP(a.cost)),
-              if (a.notes.isNotEmpty) pdfRow('Notes', a.notes),
-            ]));
+            content.add(
+              pdfCard([
+                pdfRow('Name', a.name),
+                if (a.date.isNotEmpty)
+                  pdfRow(
+                    'Date',
+                    '${formatDateUK(a.date)}${a.time.isNotEmpty ? ' at ${a.time}' : ''}',
+                  ),
+                if (a.location.isNotEmpty) pdfRow('Location', a.location),
+                if (a.bookingReference.isNotEmpty)
+                  pdfRow('Booking Ref', a.bookingReference),
+                if (a.cost > 0) pdfRow('Cost', formatGBP(a.cost)),
+                if (a.notes.isNotEmpty) pdfRow('Notes', a.notes),
+              ]),
+            );
           }
         }
 
@@ -500,14 +527,18 @@ class _HolidaySummaryScreenState extends ConsumerState<HolidaySummaryScreen> {
         if (_itineraryDays.isNotEmpty) {
           content.add(pdfSectionHeader('Itinerary'));
           for (final day in _itineraryDays) {
-            content.add(pdfCard([
-              pdfRow('Day',
-                  '${day.dayNumber}${day.title.isNotEmpty ? ' - ${day.title}' : ''}'),
-              if (day.date.isNotEmpty) pdfRow('Date', formatDateUK(day.date)),
-              if (day.description.isNotEmpty)
-                pdfRow('Description', day.description),
-              if (day.notes.isNotEmpty) pdfRow('Notes', day.notes),
-            ]));
+            content.add(
+              pdfCard([
+                pdfRow(
+                  'Day',
+                  '${day.dayNumber}${day.title.isNotEmpty ? ' - ${day.title}' : ''}',
+                ),
+                if (day.date.isNotEmpty) pdfRow('Date', formatDateUK(day.date)),
+                if (day.description.isNotEmpty)
+                  pdfRow('Description', day.description),
+                if (day.notes.isNotEmpty) pdfRow('Notes', day.notes),
+              ]),
+            );
           }
         }
 
@@ -553,35 +584,46 @@ class _HolidaySummaryScreenState extends ConsumerState<HolidaySummaryScreen> {
               ),
               child: pw.Column(
                 children: [
-                  ...costs.entries.map((entry) => pw.Padding(
-                        padding: const pw.EdgeInsets.symmetric(vertical: 2),
-                        child: pw.Row(
-                          mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                          children: [
-                            pw.Text(entry.key, style: valueStyle),
-                            pw.Text(formatGBP(entry.value),
-                                style: pw.TextStyle(
-                                    fontSize: 10,
-                                    fontWeight: pw.FontWeight.bold)),
-                          ],
-                        ),
-                      )),
+                  ...costs.entries.map(
+                    (entry) => pw.Padding(
+                      padding: const pw.EdgeInsets.symmetric(vertical: 2),
+                      child: pw.Row(
+                        mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                        children: [
+                          pw.Text(entry.key, style: valueStyle),
+                          pw.Text(
+                            formatGBP(entry.value),
+                            style: pw.TextStyle(
+                              fontSize: 10,
+                              fontWeight: pw.FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                   pw.Divider(color: PdfColors.grey400),
                   pw.Padding(
                     padding: const pw.EdgeInsets.only(top: 4),
                     child: pw.Row(
                       mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                       children: [
-                        pw.Text('TOTAL',
-                            style: pw.TextStyle(
-                                fontSize: 13,
-                                fontWeight: pw.FontWeight.bold,
-                                color: purple)),
-                        pw.Text(formatGBP(grandTotal),
-                            style: pw.TextStyle(
-                                fontSize: 13,
-                                fontWeight: pw.FontWeight.bold,
-                                color: purple)),
+                        pw.Text(
+                          'TOTAL',
+                          style: pw.TextStyle(
+                            fontSize: 13,
+                            fontWeight: pw.FontWeight.bold,
+                            color: purple,
+                          ),
+                        ),
+                        pw.Text(
+                          formatGBP(grandTotal),
+                          style: pw.TextStyle(
+                            fontSize: 13,
+                            fontWeight: pw.FontWeight.bold,
+                            color: purple,
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -642,18 +684,22 @@ class _HolidaySummaryScreenState extends ConsumerState<HolidaySummaryScreen> {
             if (_holiday != null) ...[
               DecoratedBox(
                 decoration: BoxDecoration(
-                  color: AppColors.primaryLight.withValues(alpha: 0.7),
+                  color: AppColors.primary.withValues(alpha: 0.75),
                   shape: BoxShape.circle,
                   boxShadow: const [
                     BoxShadow(
-                        color: Colors.black12,
-                        blurRadius: 4,
-                        offset: Offset(0, 2)),
+                      color: Colors.black12,
+                      blurRadius: 4,
+                      offset: Offset(0, 2),
+                    ),
                   ],
                 ),
                 child: IconButton(
-                  icon: const Icon(Icons.print_rounded,
-                      color: Colors.white, size: 20),
+                  icon: const Icon(
+                    Icons.print_rounded,
+                    color: Colors.white,
+                    size: 20,
+                  ),
                   onPressed: _printSummary,
                   tooltip: 'Print / Save PDF',
                   padding: const EdgeInsets.all(8),
@@ -663,18 +709,22 @@ class _HolidaySummaryScreenState extends ConsumerState<HolidaySummaryScreen> {
               const SizedBox(width: 8),
               DecoratedBox(
                 decoration: BoxDecoration(
-                  color: AppColors.primaryLight.withValues(alpha: 0.7),
+                  color: AppColors.primary.withValues(alpha: 0.75),
                   shape: BoxShape.circle,
                   boxShadow: const [
                     BoxShadow(
-                        color: Colors.black12,
-                        blurRadius: 4,
-                        offset: Offset(0, 2)),
+                      color: Colors.black12,
+                      blurRadius: 4,
+                      offset: Offset(0, 2),
+                    ),
                   ],
                 ),
                 child: IconButton(
-                  icon: const Icon(Icons.share_rounded,
-                      color: Colors.white, size: 20),
+                  icon: const Icon(
+                    Icons.share_rounded,
+                    color: Colors.white,
+                    size: 20,
+                  ),
                   onPressed: _shareSummary,
                   tooltip: 'Share Summary',
                   padding: const EdgeInsets.all(8),
@@ -685,9 +735,12 @@ class _HolidaySummaryScreenState extends ConsumerState<HolidaySummaryScreen> {
           ],
           body: _holiday == null
               ? Center(
-                  child: Text('Holiday not found.',
-                      style: AppTextStyles.body
-                          .copyWith(color: AppColors.textSecondary)),
+                  child: Text(
+                    'Holiday not found.',
+                    style: AppTextStyles.body.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
                 )
               : Stack(
                   children: [
@@ -714,21 +767,26 @@ class _HolidaySummaryScreenState extends ConsumerState<HolidaySummaryScreen> {
                       bottom: 16,
                       child: DecoratedBox(
                         decoration: BoxDecoration(
-                          color: AppColors.primaryLight.withValues(alpha: 0.7),
+                          color: AppColors.primary.withValues(alpha: 0.75),
                           shape: BoxShape.circle,
                           boxShadow: const [
                             BoxShadow(
-                                color: Colors.black12,
-                                blurRadius: 4,
-                                offset: Offset(0, 2)),
+                              color: Colors.black12,
+                              blurRadius: 4,
+                              offset: Offset(0, 2),
+                            ),
                           ],
                         ),
                         child: IconButton(
-                          onPressed: () => context
-                              .push('/holiday-manage/${widget.holidayId}'),
+                          onPressed: () => context.push(
+                            '/holiday-manage/${widget.holidayId}',
+                          ),
                           tooltip: 'Edit',
-                          icon: const Icon(Icons.edit_rounded,
-                              color: Colors.white, size: 22),
+                          icon: const Icon(
+                            Icons.edit_rounded,
+                            color: Colors.white,
+                            size: 22,
+                          ),
                           padding: const EdgeInsets.all(10),
                           constraints: const BoxConstraints(),
                         ),
@@ -761,19 +819,22 @@ class _HolidaySummaryScreenState extends ConsumerState<HolidaySummaryScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(h.name,
-                style: AppTextStyles.heading.copyWith(fontSize: 22)),
+            Text(h.name, style: AppTextStyles.heading.copyWith(fontSize: 22)),
             if (h.startDate.isNotEmpty || h.endDate.isNotEmpty) ...[
               const SizedBox(height: 8),
               Row(
                 children: [
-                  const Icon(Icons.calendar_today_rounded,
-                      size: 16, color: AppColors.textSecondary),
+                  const Icon(
+                    Icons.calendar_today_rounded,
+                    size: 16,
+                    color: AppColors.textSecondary,
+                  ),
                   const SizedBox(width: 6),
                   Text(
                     '${formatDateUK(h.startDate)} - ${formatDateUK(h.endDate)}',
-                    style: AppTextStyles.body
-                        .copyWith(color: AppColors.textSecondary),
+                    style: AppTextStyles.body.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
                   ),
                 ],
               ),
@@ -782,8 +843,9 @@ class _HolidaySummaryScreenState extends ConsumerState<HolidaySummaryScreen> {
               const SizedBox(height: 10),
               Text(
                 h.notes,
-                style: AppTextStyles.body
-                    .copyWith(color: AppColors.textSecondary),
+                style: AppTextStyles.body.copyWith(
+                  color: AppColors.textSecondary,
+                ),
               ),
             ],
           ],
@@ -792,41 +854,98 @@ class _HolidaySummaryScreenState extends ConsumerState<HolidaySummaryScreen> {
     );
   }
 
-  Widget _buildSectionTitle(String title, IconData icon) {
+  Widget _buildSection({
+    required String title,
+    required IconData icon,
+    required Color iconColor,
+    required List<Widget> children,
+  }) {
     return Padding(
-      padding: const EdgeInsets.only(top: 24, bottom: 10),
-      child: Row(
-        children: [
-          Icon(icon, size: 20, color: AppColors.primary),
-          const SizedBox(width: 8),
-          Text(title, style: AppTextStyles.subheading.copyWith(fontSize: 17)),
-        ],
+      padding: const EdgeInsets.only(top: 16),
+      child: Card(
+        clipBehavior: Clip.antiAlias,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: Ink(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Colors.white, iconColor.withValues(alpha: 0.06)],
+              begin: Alignment.centerLeft,
+              end: Alignment.centerRight,
+            ),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            iconColor.withValues(alpha: 0.15),
+                            iconColor.withValues(alpha: 0.08),
+                          ],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: iconColor.withValues(alpha: 0.15),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Icon(icon, color: iconColor, size: 20),
+                    ),
+                    const SizedBox(width: 10),
+                    Text(
+                      title,
+                      style: AppTextStyles.subheading.copyWith(fontSize: 17),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                ...children,
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
 
   Widget _buildTravellersSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildSectionTitle('Travellers', Icons.people_rounded),
-        ..._travelers.map((t) => _SummaryCard(
+    return _buildSection(
+      title: 'Travellers',
+      icon: Icons.people_rounded,
+      iconColor: const Color(0xFF283593),
+      children: _travelers
+          .map(
+            (t) => _SummaryCard(
               children: [
                 _SummaryRow(label: 'Name', value: t.name),
                 if (t.notes.isNotEmpty)
                   _SummaryRow(label: 'Notes', value: t.notes),
               ],
-            )),
-      ],
+            ),
+          )
+          .toList(),
     );
   }
 
   Widget _buildAccommodationSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildSectionTitle('Accommodation', Icons.hotel_rounded),
-        ..._accommodations.map((a) => _SummaryCard(
+    return _buildSection(
+      title: 'Accommodation',
+      icon: Icons.hotel_rounded,
+      iconColor: const Color(0xFF2E7D32),
+      children: _accommodations
+          .map(
+            (a) => _SummaryCard(
               children: [
                 _SummaryRow(label: 'Name', value: a.name),
                 if (a.address.isNotEmpty)
@@ -839,87 +958,95 @@ class _HolidaySummaryScreenState extends ConsumerState<HolidaySummaryScreen> {
                   ),
                 if (a.confirmationNumber.isNotEmpty)
                   _SummaryRow(
-                      label: 'Confirmation', value: a.confirmationNumber),
+                    label: 'Confirmation',
+                    value: a.confirmationNumber,
+                  ),
                 if (a.cost > 0)
                   _SummaryRow(label: 'Cost', value: formatGBP(a.cost)),
                 if (a.depositPaid > 0)
                   _SummaryRow(
-                      label: 'Deposit Paid', value: formatGBP(a.depositPaid)),
+                    label: 'Deposit Paid',
+                    value: formatGBP(a.depositPaid),
+                  ),
                 if (a.balanceDue > 0)
                   _SummaryRow(
-                      label: 'Balance Due', value: formatGBP(a.balanceDue)),
+                    label: 'Balance Due',
+                    value: formatGBP(a.balanceDue),
+                  ),
                 if (a.balanceDueDate.isNotEmpty)
                   _SummaryRow(
-                      label: 'Due Date',
-                      value: formatDateUK(a.balanceDueDate)),
+                    label: 'Due Date',
+                    value: formatDateUK(a.balanceDueDate),
+                  ),
                 if (a.balancePaidDate.isNotEmpty)
                   _SummaryRow(
-                      label: 'Paid Date',
-                      value: formatDateUK(a.balancePaidDate)),
+                    label: 'Paid Date',
+                    value: formatDateUK(a.balancePaidDate),
+                  ),
                 if (a.notes.isNotEmpty)
                   _SummaryRow(label: 'Notes', value: a.notes),
               ],
-            )),
-      ],
+            ),
+          )
+          .toList(),
     );
   }
 
   Widget _buildTravelSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildSectionTitle('Travel', Icons.flight_rounded),
-        ..._travelLegs.map((leg) {
-          final typeLabel = leg.type.isNotEmpty
-              ? '${leg.type[0].toUpperCase()}${leg.type.substring(1)}'
-              : '';
-          final modeLabel = leg.mode.isNotEmpty
-              ? '${leg.mode[0].toUpperCase()}${leg.mode.substring(1)}'
-              : '';
+    return _buildSection(
+      title: 'Travel',
+      icon: Icons.flight_rounded,
+      iconColor: const Color(0xFF1565C0),
+      children: _travelLegs.map((leg) {
+        final typeLabel = leg.type.isNotEmpty
+            ? '${leg.type[0].toUpperCase()}${leg.type.substring(1)}'
+            : '';
+        final modeLabel = leg.mode.isNotEmpty
+            ? '${leg.mode[0].toUpperCase()}${leg.mode.substring(1)}'
+            : '';
 
-          return _SummaryCard(
-            children: [
+        return _SummaryCard(
+          children: [
+            _SummaryRow(
+              label: 'Type',
+              value: '$typeLabel${modeLabel.isNotEmpty ? ' ($modeLabel)' : ''}',
+            ),
+            if (leg.from.isNotEmpty || leg.to.isNotEmpty)
+              _SummaryRow(label: 'Route', value: '${leg.from} -> ${leg.to}'),
+            if (leg.departureDate.isNotEmpty)
               _SummaryRow(
-                  label: 'Type',
-                  value:
-                      '$typeLabel${modeLabel.isNotEmpty ? ' ($modeLabel)' : ''}'),
-              if (leg.from.isNotEmpty || leg.to.isNotEmpty)
-                _SummaryRow(
-                    label: 'Route', value: '${leg.from} -> ${leg.to}'),
-              if (leg.departureDate.isNotEmpty)
-                _SummaryRow(
-                  label: 'Depart',
-                  value:
-                      '${formatDateUK(leg.departureDate)}${leg.departureTime.isNotEmpty ? ' ${leg.departureTime}' : ''}',
-                ),
-              if (leg.arrivalDate.isNotEmpty)
-                _SummaryRow(
-                  label: 'Arrive',
-                  value:
-                      '${formatDateUK(leg.arrivalDate)}${leg.arrivalTime.isNotEmpty ? ' ${leg.arrivalTime}' : ''}',
-                ),
-              if (leg.carrier.isNotEmpty)
-                _SummaryRow(label: 'Carrier', value: leg.carrier),
-              if (leg.bookingReference.isNotEmpty)
-                _SummaryRow(
-                    label: 'Booking Ref', value: leg.bookingReference),
-              if (leg.cost > 0)
-                _SummaryRow(label: 'Cost', value: formatGBP(leg.cost)),
-              if (leg.notes.isNotEmpty)
-                _SummaryRow(label: 'Notes', value: leg.notes),
-            ],
-          );
-        }),
-      ],
+                label: 'Depart',
+                value:
+                    '${formatDateUK(leg.departureDate)}${leg.departureTime.isNotEmpty ? ' ${leg.departureTime}' : ''}',
+              ),
+            if (leg.arrivalDate.isNotEmpty)
+              _SummaryRow(
+                label: 'Arrive',
+                value:
+                    '${formatDateUK(leg.arrivalDate)}${leg.arrivalTime.isNotEmpty ? ' ${leg.arrivalTime}' : ''}',
+              ),
+            if (leg.carrier.isNotEmpty)
+              _SummaryRow(label: 'Carrier', value: leg.carrier),
+            if (leg.bookingReference.isNotEmpty)
+              _SummaryRow(label: 'Booking Ref', value: leg.bookingReference),
+            if (leg.cost > 0)
+              _SummaryRow(label: 'Cost', value: formatGBP(leg.cost)),
+            if (leg.notes.isNotEmpty)
+              _SummaryRow(label: 'Notes', value: leg.notes),
+          ],
+        );
+      }).toList(),
     );
   }
 
   Widget _buildCarHireSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildSectionTitle('Car Hire', Icons.directions_car_rounded),
-        ..._carHires.map((c) => _SummaryCard(
+    return _buildSection(
+      title: 'Car Hire',
+      icon: Icons.directions_car_rounded,
+      iconColor: const Color(0xFFE65100),
+      children: _carHires
+          .map(
+            (c) => _SummaryCard(
               children: [
                 if (c.company.isNotEmpty)
                   _SummaryRow(label: 'Company', value: c.company),
@@ -938,28 +1065,31 @@ class _HolidaySummaryScreenState extends ConsumerState<HolidaySummaryScreen> {
                 if (c.drivers.isNotEmpty)
                   _SummaryRow(label: 'Drivers', value: c.drivers),
                 if (c.bookingReference.isNotEmpty)
-                  _SummaryRow(
-                      label: 'Booking Ref', value: c.bookingReference),
+                  _SummaryRow(label: 'Booking Ref', value: c.bookingReference),
                 if (c.deposit > 0)
-                  _SummaryRow(
-                      label: 'Deposit', value: formatGBP(c.deposit)),
+                  _SummaryRow(label: 'Deposit', value: formatGBP(c.deposit)),
                 if (c.totalCost > 0)
                   _SummaryRow(
-                      label: 'Total Cost', value: formatGBP(c.totalCost)),
+                    label: 'Total Cost',
+                    value: formatGBP(c.totalCost),
+                  ),
                 if (c.notes.isNotEmpty)
                   _SummaryRow(label: 'Notes', value: c.notes),
               ],
-            )),
-      ],
+            ),
+          )
+          .toList(),
     );
   }
 
   Widget _buildActivitiesSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildSectionTitle('Activities', Icons.local_activity_rounded),
-        ..._activities.map((a) => _SummaryCard(
+    return _buildSection(
+      title: 'Activities',
+      icon: Icons.local_activity_rounded,
+      iconColor: const Color(0xFFC62828),
+      children: _activities
+          .map(
+            (a) => _SummaryCard(
               children: [
                 _SummaryRow(label: 'Name', value: a.name),
                 if (a.date.isNotEmpty)
@@ -971,91 +1101,105 @@ class _HolidaySummaryScreenState extends ConsumerState<HolidaySummaryScreen> {
                 if (a.location.isNotEmpty)
                   _SummaryRow(label: 'Location', value: a.location),
                 if (a.bookingReference.isNotEmpty)
-                  _SummaryRow(
-                      label: 'Booking Ref', value: a.bookingReference),
+                  _SummaryRow(label: 'Booking Ref', value: a.bookingReference),
                 if (a.cost > 0)
                   _SummaryRow(label: 'Cost', value: formatGBP(a.cost)),
                 if (a.notes.isNotEmpty)
                   _SummaryRow(label: 'Notes', value: a.notes),
               ],
-            )),
-      ],
+            ),
+          )
+          .toList(),
     );
   }
 
   Widget _buildItinerarySection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildSectionTitle('Itinerary', Icons.map_rounded),
-        ..._itineraryDays.map((day) => Card(
+    return _buildSection(
+      title: 'Itinerary',
+      icon: Icons.map_rounded,
+      iconColor: const Color(0xFF00695C),
+      children: _itineraryDays
+          .map(
+            (day) => Container(
               margin: const EdgeInsets.only(bottom: 8),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
-              elevation: 1,
-              child: Padding(
-                padding: const EdgeInsets.all(14),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          width: 32,
-                          height: 32,
-                          decoration: BoxDecoration(
-                            color: AppColors.primaryLight,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Center(
-                            child: Text(
-                              '${day.dayNumber}',
-                              style: AppTextStyles.bodyBold
-                                  .copyWith(color: Colors.white, fontSize: 13),
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.7),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        width: 32,
+                        height: 32,
+                        decoration: BoxDecoration(
+                          color: const Color(
+                            0xFF00695C,
+                          ).withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Center(
+                          child: Text(
+                            '${day.dayNumber}',
+                            style: AppTextStyles.bodyBold.copyWith(
+                              color: const Color(0xFF00695C),
+                              fontSize: 13,
                             ),
                           ),
                         ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                            'Day ${day.dayNumber}${day.title.isNotEmpty ? ' - ${day.title}' : ''}',
-                            style: AppTextStyles.bodyBold,
-                          ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          'Day ${day.dayNumber}${day.title.isNotEmpty ? ' - ${day.title}' : ''}',
+                          style: AppTextStyles.bodyBold,
                         ),
-                      ],
+                      ),
+                    ],
+                  ),
+                  if (day.date.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Padding(
+                      padding: const EdgeInsets.only(left: 42),
+                      child: Text(
+                        formatDateUK(day.date),
+                        style: AppTextStyles.caption,
+                      ),
                     ),
-                    if (day.date.isNotEmpty) ...[
-                      const SizedBox(height: 4),
-                      Padding(
-                        padding: const EdgeInsets.only(left: 42),
-                        child: Text(formatDateUK(day.date),
-                            style: AppTextStyles.caption),
-                      ),
-                    ],
-                    if (day.description.isNotEmpty) ...[
-                      const SizedBox(height: 6),
-                      Padding(
-                        padding: const EdgeInsets.only(left: 42),
-                        child: Text(day.description,
-                            style: AppTextStyles.body.copyWith(
-                                color: AppColors.textSecondary)),
-                      ),
-                    ],
-                    if (day.notes.isNotEmpty) ...[
-                      const SizedBox(height: 6),
-                      Padding(
-                        padding: const EdgeInsets.only(left: 42),
-                        child: Text(day.notes,
-                            style: AppTextStyles.caption.copyWith(
-                                color: AppColors.textMuted,
-                                fontStyle: FontStyle.italic)),
-                      ),
-                    ],
                   ],
-                ),
+                  if (day.description.isNotEmpty) ...[
+                    const SizedBox(height: 6),
+                    Padding(
+                      padding: const EdgeInsets.only(left: 42),
+                      child: Text(
+                        day.description,
+                        style: AppTextStyles.body.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ),
+                  ],
+                  if (day.notes.isNotEmpty) ...[
+                    const SizedBox(height: 6),
+                    Padding(
+                      padding: const EdgeInsets.only(left: 42),
+                      child: Text(
+                        day.notes,
+                        style: AppTextStyles.caption.copyWith(
+                          color: AppColors.textMuted,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
               ),
-            )),
-      ],
+            ),
+          )
+          .toList(),
     );
   }
 
@@ -1096,46 +1240,41 @@ class _HolidaySummaryScreenState extends ConsumerState<HolidaySummaryScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionTitle('Financial Summary', Icons.account_balance_rounded),
-        Card(
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-          elevation: 2,
-          shadowColor: AppColors.cardShadow,
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                ...costs.entries.map((entry) => Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 4),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(entry.key, style: AppTextStyles.body),
-                          Text(formatGBP(entry.value),
-                              style: AppTextStyles.bodyBold),
-                        ],
-                      ),
-                    )),
-                const Divider(height: 20),
-                Row(
+        _buildSection(
+          title: 'Financial Summary',
+          icon: Icons.account_balance_rounded,
+          iconColor: AppColors.primary,
+          children: [
+            ...costs.entries.map(
+              (entry) => Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('TOTAL',
-                        style: AppTextStyles.subheading
-                            .copyWith(fontSize: 16)),
-                    Text(
-                      formatGBP(grandTotal),
-                      style: AppTextStyles.subheading.copyWith(
-                        fontSize: 16,
-                        color: AppColors.primary,
-                      ),
-                    ),
+                    Text(entry.key, style: AppTextStyles.body),
+                    Text(formatGBP(entry.value), style: AppTextStyles.bodyBold),
                   ],
+                ),
+              ),
+            ),
+            const Divider(height: 20),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'TOTAL',
+                  style: AppTextStyles.subheading.copyWith(fontSize: 16),
+                ),
+                Text(
+                  formatGBP(grandTotal),
+                  style: AppTextStyles.subheading.copyWith(
+                    fontSize: 16,
+                    color: AppColors.primary,
+                  ),
                 ),
               ],
             ),
-          ),
+          ],
         ),
         const SizedBox(height: 32),
       ],
@@ -1152,16 +1291,16 @@ class _SummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
+    return Container(
       margin: const EdgeInsets.only(bottom: 8),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      elevation: 1,
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: children,
-        ),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.7),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: children,
       ),
     );
   }
@@ -1183,12 +1322,18 @@ class _SummaryRow extends StatelessWidget {
         children: [
           SizedBox(
             width: 110,
-            child: Text('$label:',
-                style: AppTextStyles.caption
-                    .copyWith(fontWeight: FontWeight.w600)),
+            child: Text(
+              '$label:',
+              style: AppTextStyles.caption.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ),
           Expanded(
-            child: Text(value, style: AppTextStyles.body.copyWith(fontSize: 13)),
+            child: Text(
+              value,
+              style: AppTextStyles.body.copyWith(fontSize: 13),
+            ),
           ),
         ],
       ),

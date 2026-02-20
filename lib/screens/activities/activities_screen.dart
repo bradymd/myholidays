@@ -48,8 +48,7 @@ class ActivitiesScreen extends ConsumerWidget {
               return _ActivityCard(
                 activity: activities[index],
                 holidayId: holidayId,
-                onDelete: () =>
-                    _confirmDelete(context, ref, activities[index]),
+                onDelete: () => _confirmDelete(context, ref, activities[index]),
               );
             },
           );
@@ -58,8 +57,7 @@ class ActivitiesScreen extends ConsumerWidget {
     );
   }
 
-  void _confirmDelete(
-      BuildContext context, WidgetRef ref, Activity activity) {
+  void _confirmDelete(BuildContext context, WidgetRef ref, Activity activity) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -79,8 +77,10 @@ class ActivitiesScreen extends ConsumerWidget {
                   .read(activitiesProvider(holidayId).notifier)
                   .deleteActivity(activity.id);
             },
-            child: const Text('Delete',
-                style: TextStyle(color: AppColors.danger)),
+            child: const Text(
+              'Delete',
+              style: TextStyle(color: AppColors.danger),
+            ),
           ),
         ],
       ),
@@ -101,97 +101,133 @@ class _ActivityCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    const sectionColor = Color(0xFFC62828);
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
+      clipBehavior: Clip.antiAlias,
       elevation: 2,
       shadowColor: AppColors.cardShadow,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header: name + actions
-            Row(
-              children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: AppColors.softOrange,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Icon(Icons.local_activity_rounded,
-                      color: AppColors.warning, size: 22),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    activity.name.isNotEmpty ? activity.name : 'Activity',
-                    style: AppTextStyles.subheading.copyWith(fontSize: 16),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.edit_outlined, size: 20),
-                  color: AppColors.primary,
-                  onPressed: () => context
-                      .push('/edit-activity/$holidayId/${activity.id}'),
-                  tooltip: 'Edit',
-                  visualDensity: VisualDensity.compact,
-                ),
-                IconButton(
-                  icon: const Icon(Icons.delete_outline_rounded, size: 20),
-                  color: AppColors.danger,
-                  onPressed: onDelete,
-                  tooltip: 'Delete',
-                  visualDensity: VisualDensity.compact,
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-
-            // Date & time
-            if (activity.date.isNotEmpty)
+      child: Ink(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Colors.white, sectionColor.withValues(alpha: 0.06)],
+            begin: Alignment.centerLeft,
+            end: Alignment.centerRight,
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header: name + actions
               Row(
                 children: [
-                  const Icon(Icons.calendar_today_rounded,
-                      size: 14, color: AppColors.textMuted),
-                  const SizedBox(width: 6),
-                  Text(
-                    formatDateUK(activity.date),
-                    style: AppTextStyles.caption,
-                  ),
-                  if (activity.time.isNotEmpty) ...[
-                    const SizedBox(width: 12),
-                    const Icon(Icons.access_time_rounded,
-                        size: 14, color: AppColors.textMuted),
-                    const SizedBox(width: 4),
-                    Text(
-                      activity.time,
-                      style: AppTextStyles.caption,
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          sectionColor.withValues(alpha: 0.15),
+                          sectionColor.withValues(alpha: 0.08),
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: sectionColor.withValues(alpha: 0.15),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
                     ),
-                  ],
+                    child: const Icon(
+                      Icons.local_activity_rounded,
+                      color: sectionColor,
+                      size: 22,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      activity.name.isNotEmpty ? activity.name : 'Activity',
+                      style: AppTextStyles.subheading.copyWith(fontSize: 16),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.edit_outlined, size: 20),
+                    color: sectionColor,
+                    onPressed: () => context.push(
+                      '/edit-activity/$holidayId/${activity.id}',
+                    ),
+                    tooltip: 'Edit',
+                    visualDensity: VisualDensity.compact,
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.delete_outline_rounded, size: 20),
+                    color: AppColors.danger,
+                    onPressed: onDelete,
+                    tooltip: 'Delete',
+                    visualDensity: VisualDensity.compact,
+                  ),
                 ],
               ),
-            if (activity.date.isNotEmpty) const SizedBox(height: 8),
+              const SizedBox(height: 12),
 
-            // Info chips
-            Wrap(
-              spacing: 16,
-              runSpacing: 4,
-              children: [
-                if (activity.location.isNotEmpty)
-                  _infoChip(Icons.location_on_outlined, activity.location),
-                if (activity.cost > 0)
-                  _infoChip(
-                      Icons.payments_outlined, formatGBP(activity.cost)),
-                if (activity.bookingReference.isNotEmpty)
-                  _infoChip(Icons.confirmation_number_outlined,
-                      activity.bookingReference),
-              ],
-            ),
-          ],
+              // Date & time
+              if (activity.date.isNotEmpty)
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.calendar_today_rounded,
+                      size: 14,
+                      color: AppColors.textMuted,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      formatDateUK(activity.date),
+                      style: AppTextStyles.caption,
+                    ),
+                    if (activity.time.isNotEmpty) ...[
+                      const SizedBox(width: 12),
+                      const Icon(
+                        Icons.access_time_rounded,
+                        size: 14,
+                        color: AppColors.textMuted,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(activity.time, style: AppTextStyles.caption),
+                    ],
+                  ],
+                ),
+              if (activity.date.isNotEmpty) const SizedBox(height: 8),
+
+              // Info chips
+              Wrap(
+                spacing: 16,
+                runSpacing: 4,
+                children: [
+                  if (activity.location.isNotEmpty)
+                    _infoChip(Icons.location_on_outlined, activity.location),
+                  if (activity.cost > 0)
+                    _infoChip(
+                      Icons.payments_outlined,
+                      formatGBP(activity.cost),
+                    ),
+                  if (activity.bookingReference.isNotEmpty)
+                    _infoChip(
+                      Icons.confirmation_number_outlined,
+                      activity.bookingReference,
+                    ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );

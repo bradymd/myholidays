@@ -63,8 +63,7 @@ class _AddEditTravelerScreenState extends ConsumerState<AddEditTravelerScreen> {
     );
 
     try {
-      final notifier =
-          ref.read(travelersProvider(widget.holidayId).notifier);
+      final notifier = ref.read(travelersProvider(widget.holidayId).notifier);
       if (_isEditing) {
         await notifier.updateTraveler(traveler);
       } else {
@@ -80,9 +79,9 @@ class _AddEditTravelerScreenState extends ConsumerState<AddEditTravelerScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error saving traveller: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error saving traveller: $e')));
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -105,50 +104,68 @@ class _AddEditTravelerScreenState extends ConsumerState<AddEditTravelerScreen> {
         data: (_) => Stack(
           children: [
             SingleChildScrollView(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(16),
               child: Form(
                 key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Text(
-                      _isEditing ? 'Edit Traveller' : 'New Traveller',
-                      style: AppTextStyles.subheading,
-                    ),
-                    const SizedBox(height: 24),
-
-                    // Name field
-                    Text('Name', style: AppTextStyles.label),
-                    const SizedBox(height: 6),
-                    TextFormField(
-                      controller: _nameController,
-                      textCapitalization: TextCapitalization.words,
-                      decoration: const InputDecoration(
-                        hintText: 'Enter traveller name',
-                      ),
-                      validator: (v) {
-                        if (v == null || v.trim().isEmpty) {
-                          return 'Name is required';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 20),
-
-                    // Notes field
-                    Text('Notes', style: AppTextStyles.label),
-                    const SizedBox(height: 6),
-                    TextFormField(
-                      controller: _notesController,
-                      textCapitalization: TextCapitalization.sentences,
-                      maxLines: 4,
-                      decoration: const InputDecoration(
-                        hintText: 'Passport number, dietary needs, etc.',
+                child: Card(
+                  clipBehavior: Clip.antiAlias,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Ink(
+                    decoration: const BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [Colors.white, Color(0x0F283593)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
                       ),
                     ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Text(
+                            _isEditing ? 'Edit Traveller' : 'New Traveller',
+                            style: AppTextStyles.subheading,
+                          ),
+                          const SizedBox(height: 24),
 
-                    const SizedBox(height: 80),
-                  ],
+                          // Name field
+                          Text('Name', style: AppTextStyles.label),
+                          const SizedBox(height: 6),
+                          TextFormField(
+                            controller: _nameController,
+                            textCapitalization: TextCapitalization.words,
+                            decoration: const InputDecoration(
+                              hintText: 'Enter traveller name',
+                            ),
+                            validator: (v) {
+                              if (v == null || v.trim().isEmpty) {
+                                return 'Name is required';
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 20),
+
+                          // Notes field
+                          Text('Notes', style: AppTextStyles.label),
+                          const SizedBox(height: 6),
+                          TextFormField(
+                            controller: _notesController,
+                            textCapitalization: TextCapitalization.sentences,
+                            maxLines: 4,
+                            decoration: const InputDecoration(
+                              hintText: 'Passport number, dietary needs, etc.',
+                            ),
+                          ),
+
+                          const SizedBox(height: 80),
+                        ],
+                      ),
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -157,16 +174,24 @@ class _AddEditTravelerScreenState extends ConsumerState<AddEditTravelerScreen> {
               bottom: 16,
               child: DecoratedBox(
                 decoration: BoxDecoration(
-                  color: AppColors.primaryLight.withValues(alpha: 0.7),
+                  color: AppColors.primary.withValues(alpha: 0.75),
                   shape: BoxShape.circle,
                   boxShadow: const [
-                    BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2)),
+                    BoxShadow(
+                      color: Colors.black12,
+                      blurRadius: 4,
+                      offset: Offset(0, 2),
+                    ),
                   ],
                 ),
                 child: IconButton(
                   onPressed: _isLoading ? null : _save,
                   tooltip: _isEditing ? 'Save' : 'Add',
-                  icon: const Icon(Icons.check_rounded, color: Colors.white, size: 22),
+                  icon: const Icon(
+                    Icons.check_rounded,
+                    color: Colors.white,
+                    size: 22,
+                  ),
                   padding: const EdgeInsets.all(10),
                   constraints: const BoxConstraints(),
                 ),

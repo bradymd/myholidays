@@ -53,16 +53,18 @@ class _AddEditItineraryDayScreenState
     final holidays = await ref.read(holidaysProvider.future);
     final holiday = holidays.where((h) => h.id == widget.holidayId).firstOrNull;
     if (holiday != null && mounted) {
-      setState(() { _holidayStartDate = holiday.startDate; });
+      setState(() {
+        _holidayStartDate = holiday.startDate;
+      });
     }
   }
 
   Future<void> _loadData() async {
     if (_isEditing) {
-      final days =
-          await ref.read(itineraryDaysProvider(widget.holidayId).future);
-      final existing =
-          days.where((d) => d.id == widget.editDayId).firstOrNull;
+      final days = await ref.read(
+        itineraryDaysProvider(widget.holidayId).future,
+      );
+      final existing = days.where((d) => d.id == widget.editDayId).firstOrNull;
       if (existing != null) {
         _existing = existing;
         _dayNumberController.text = existing.dayNumber.toString();
@@ -78,7 +80,9 @@ class _AddEditItineraryDayScreenState
   Future<void> _pickDate() async {
     final current = _date.isNotEmpty ? _date : '';
     final initial =
-        DateTime.tryParse(current) ?? DateTime.tryParse(_holidayStartDate) ?? DateTime.now();
+        DateTime.tryParse(current) ??
+        DateTime.tryParse(_holidayStartDate) ??
+        DateTime.now();
     final picked = await showDatePicker(
       context: context,
       initialDate: initial,
@@ -115,8 +119,7 @@ class _AddEditItineraryDayScreenState
       notes: _notesController.text.trim(),
     );
 
-    final notifier =
-        ref.read(itineraryDaysProvider(widget.holidayId).notifier);
+    final notifier = ref.read(itineraryDaysProvider(widget.holidayId).notifier);
 
     if (_isEditing) {
       await notifier.updateItineraryDay(day);
@@ -153,106 +156,130 @@ class _AddEditItineraryDayScreenState
           : Stack(
               children: [
                 SingleChildScrollView(
-                  padding: const EdgeInsets.all(20),
+                  padding: const EdgeInsets.all(16),
                   child: Form(
                     key: _formKey,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        // Day Number
-                        Text('Day Number', style: AppTextStyles.label),
-                        const SizedBox(height: 6),
-                        TextFormField(
-                          controller: _dayNumberController,
-                          keyboardType: TextInputType.number,
-                          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                          decoration: const InputDecoration(
-                            hintText: 'e.g. 1',
+                    child: Card(
+                      clipBehavior: Clip.antiAlias,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Ink(
+                        decoration: const BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [Colors.white, Color(0x0F00695C)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
                           ),
-                          validator: (v) {
-                            if (v == null || v.trim().isEmpty) {
-                              return 'Please enter a day number';
-                            }
-                            final n = int.tryParse(v.trim());
-                            if (n == null || n < 1) {
-                              return 'Enter a valid day number';
-                            }
-                            return null;
-                          },
                         ),
-                        const SizedBox(height: 20),
+                        child: Padding(
+                          padding: const EdgeInsets.all(20),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              // Day Number
+                              Text('Day Number', style: AppTextStyles.label),
+                              const SizedBox(height: 6),
+                              TextFormField(
+                                controller: _dayNumberController,
+                                keyboardType: TextInputType.number,
+                                inputFormatters: [
+                                  FilteringTextInputFormatter.digitsOnly,
+                                ],
+                                decoration: const InputDecoration(
+                                  hintText: 'e.g. 1',
+                                ),
+                                validator: (v) {
+                                  if (v == null || v.trim().isEmpty) {
+                                    return 'Please enter a day number';
+                                  }
+                                  final n = int.tryParse(v.trim());
+                                  if (n == null || n < 1) {
+                                    return 'Enter a valid day number';
+                                  }
+                                  return null;
+                                },
+                              ),
+                              const SizedBox(height: 20),
 
-                        // Date
-                        Text('Date', style: AppTextStyles.label),
-                        const SizedBox(height: 6),
-                        InkWell(
-                          onTap: _pickDate,
-                          borderRadius: BorderRadius.circular(12),
-                          child: InputDecorator(
-                            decoration: const InputDecoration(),
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    _formatDateDisplay(),
-                                    style: _date.isEmpty
-                                        ? AppTextStyles.body
-                                            .copyWith(color: AppColors.textMuted)
-                                        : AppTextStyles.body,
+                              // Date
+                              Text('Date', style: AppTextStyles.label),
+                              const SizedBox(height: 6),
+                              InkWell(
+                                onTap: _pickDate,
+                                borderRadius: BorderRadius.circular(12),
+                                child: InputDecorator(
+                                  decoration: const InputDecoration(),
+                                  child: Row(
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          _formatDateDisplay(),
+                                          style: _date.isEmpty
+                                              ? AppTextStyles.body.copyWith(
+                                                  color: AppColors.textMuted,
+                                                )
+                                              : AppTextStyles.body,
+                                        ),
+                                      ),
+                                      const Icon(
+                                        Icons.calendar_today_rounded,
+                                        size: 20,
+                                        color: AppColors.primary,
+                                      ),
+                                    ],
                                   ),
                                 ),
-                                const Icon(Icons.calendar_today_rounded,
-                                    size: 20, color: AppColors.primary),
-                              ],
-                            ),
+                              ),
+                              const SizedBox(height: 20),
+
+                              // Title
+                              Text('Title', style: AppTextStyles.label),
+                              const SizedBox(height: 6),
+                              TextFormField(
+                                controller: _titleController,
+                                decoration: const InputDecoration(
+                                  hintText: 'e.g. Arrival & City Tour',
+                                ),
+                                validator: (v) {
+                                  if (v == null || v.trim().isEmpty) {
+                                    return 'Please enter a title';
+                                  }
+                                  return null;
+                                },
+                              ),
+                              const SizedBox(height: 20),
+
+                              // Description
+                              Text('Description', style: AppTextStyles.label),
+                              const SizedBox(height: 6),
+                              TextFormField(
+                                controller: _descriptionController,
+                                maxLines: 5,
+                                minLines: 3,
+                                decoration: const InputDecoration(
+                                  hintText: 'What are the plans for this day?',
+                                ),
+                              ),
+                              const SizedBox(height: 20),
+
+                              // Notes
+                              Text('Notes', style: AppTextStyles.label),
+                              const SizedBox(height: 6),
+                              TextFormField(
+                                controller: _notesController,
+                                maxLines: 4,
+                                minLines: 2,
+                                decoration: const InputDecoration(
+                                  hintText: 'Any extra notes...',
+                                ),
+                              ),
+
+                              const SizedBox(height: 80),
+                            ],
                           ),
                         ),
-                        const SizedBox(height: 20),
-
-                        // Title
-                        Text('Title', style: AppTextStyles.label),
-                        const SizedBox(height: 6),
-                        TextFormField(
-                          controller: _titleController,
-                          decoration: const InputDecoration(
-                            hintText: 'e.g. Arrival & City Tour',
-                          ),
-                          validator: (v) {
-                            if (v == null || v.trim().isEmpty) {
-                              return 'Please enter a title';
-                            }
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 20),
-
-                        // Description
-                        Text('Description', style: AppTextStyles.label),
-                        const SizedBox(height: 6),
-                        TextFormField(
-                          controller: _descriptionController,
-                          maxLines: 5,
-                          minLines: 3,
-                          decoration: const InputDecoration(
-                            hintText: 'What are the plans for this day?',
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-
-                        // Notes
-                        Text('Notes', style: AppTextStyles.label),
-                        const SizedBox(height: 6),
-                        TextFormField(
-                          controller: _notesController,
-                          maxLines: 4,
-                          minLines: 2,
-                          decoration: const InputDecoration(
-                            hintText: 'Any extra notes...',
-                          ),
-                        ),
-
-                        const SizedBox(height: 80),
-                      ],
+                      ),
                     ),
                   ),
                 ),
@@ -261,16 +288,24 @@ class _AddEditItineraryDayScreenState
                   bottom: 16,
                   child: DecoratedBox(
                     decoration: BoxDecoration(
-                      color: AppColors.primaryLight.withValues(alpha: 0.7),
+                      color: AppColors.primary.withValues(alpha: 0.75),
                       shape: BoxShape.circle,
                       boxShadow: const [
-                        BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2)),
+                        BoxShadow(
+                          color: Colors.black12,
+                          blurRadius: 4,
+                          offset: Offset(0, 2),
+                        ),
                       ],
                     ),
                     child: IconButton(
                       onPressed: _isSaving ? null : _save,
                       tooltip: _isEditing ? 'Save' : 'Add',
-                      icon: const Icon(Icons.check_rounded, color: Colors.white, size: 22),
+                      icon: const Icon(
+                        Icons.check_rounded,
+                        color: Colors.white,
+                        size: 22,
+                      ),
                       padding: const EdgeInsets.all(10),
                       constraints: const BoxConstraints(),
                     ),

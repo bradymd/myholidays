@@ -55,8 +55,7 @@ class _HolidayDetailScreenState extends ConsumerState<HolidayDetailScreen> {
 
   Future<void> _loadSectionPrefs() async {
     final db = ref.read(databaseProvider);
-    final value =
-        await db.getSetting('holiday_sections_${widget.holidayId}');
+    final value = await db.getSetting('holiday_sections_${widget.holidayId}');
     if (mounted) {
       setState(() {
         if (value != null && value.isNotEmpty) {
@@ -77,13 +76,17 @@ class _HolidayDetailScreenState extends ConsumerState<HolidayDetailScreen> {
     setState(() => _enabledSections = updated);
     final db = ref.read(databaseProvider);
     await db.setSetting(
-        'holiday_sections_${widget.holidayId}', updated.join(','));
+      'holiday_sections_${widget.holidayId}',
+      updated.join(','),
+    );
   }
 
   Future<void> _loadDocuments() async {
     final db = ref.read(databaseProvider);
-    final docs =
-        await db.getDocuments(parentType: 'holiday', parentId: widget.holidayId);
+    final docs = await db.getDocuments(
+      parentType: 'holiday',
+      parentId: widget.holidayId,
+    );
     if (mounted) {
       setState(() {
         _documents = docs;
@@ -135,8 +138,10 @@ class _HolidayDetailScreenState extends ConsumerState<HolidayDetailScreen> {
               Navigator.pop(ctx);
               context.go('/');
             },
-            child: const Text('Delete',
-                style: TextStyle(color: AppColors.danger)),
+            child: const Text(
+              'Delete',
+              style: TextStyle(color: AppColors.danger),
+            ),
           ),
         ],
       ),
@@ -154,8 +159,11 @@ class _HolidayDetailScreenState extends ConsumerState<HolidayDetailScreen> {
           color: enabled ? Colors.white : AppColors.textMuted,
         ),
       ),
-      avatar: Icon(icon, size: 14,
-          color: enabled ? Colors.white : AppColors.textMuted),
+      avatar: Icon(
+        icon,
+        size: 14,
+        color: enabled ? Colors.white : AppColors.textMuted,
+      ),
       selected: enabled,
       onSelected: (_) => _toggleSection(key),
       selectedColor: AppColors.primaryLight,
@@ -175,11 +183,10 @@ class _HolidayDetailScreenState extends ConsumerState<HolidayDetailScreen> {
   }) {
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: AppColors.primaryLight.withValues(alpha: 0.7),
+        color: AppColors.primary.withValues(alpha: 0.75),
         shape: BoxShape.circle,
         boxShadow: const [
-          BoxShadow(
-              color: Colors.black12, blurRadius: 4, offset: Offset(0, 2)),
+          BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2)),
         ],
       ),
       child: IconButton(
@@ -210,16 +217,21 @@ class _HolidayDetailScreenState extends ConsumerState<HolidayDetailScreen> {
     // Reload documents when returning to screen
     ref.listen(holidaysProvider, (prev, next) => _loadDocuments());
 
-    final totalCost =
-        _totalCost(accommodations, travelLegs, carHires, activities);
+    final totalCost = _totalCost(
+      accommodations,
+      travelLegs,
+      carHires,
+      activities,
+    );
 
     return holidaysAsync.when(
       loading: () =>
           const Scaffold(body: Center(child: CircularProgressIndicator())),
       error: (e, _) => Scaffold(body: Center(child: Text('Error: $e'))),
       data: (holidays) {
-        final holiday =
-            holidays.where((h) => h.id == widget.holidayId).firstOrNull;
+        final holiday = holidays
+            .where((h) => h.id == widget.holidayId)
+            .firstOrNull;
         if (holiday == null) {
           return AppScaffold(
             title: '',
@@ -247,96 +259,146 @@ class _HolidayDetailScreenState extends ConsumerState<HolidayDetailScreen> {
                 // Holiday info card — tappable like other panels
                 Card(
                   margin: const EdgeInsets.only(bottom: 8),
-                  child: InkWell(
-                    onTap: () =>
-                        context.push('/edit-holiday/${widget.holidayId}'),
-                    borderRadius: BorderRadius.circular(12),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 14),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: AppColors.primary
-                                      .withValues(alpha: 0.12),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: const Icon(
+                  clipBehavior: Clip.antiAlias,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Ink(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          Colors.white,
+                          AppColors.primary.withValues(alpha: 0.06),
+                        ],
+                        begin: Alignment.centerLeft,
+                        end: Alignment.centerRight,
+                      ),
+                    ),
+                    child: InkWell(
+                      onTap: () =>
+                          context.push('/edit-holiday/${widget.holidayId}'),
+                      borderRadius: BorderRadius.circular(16),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 14,
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      colors: [
+                                        AppColors.primary.withValues(
+                                          alpha: 0.15,
+                                        ),
+                                        AppColors.primary.withValues(
+                                          alpha: 0.08,
+                                        ),
+                                      ],
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                    ),
+                                    shape: BoxShape.circle,
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: AppColors.primary.withValues(
+                                          alpha: 0.15,
+                                        ),
+                                        blurRadius: 8,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ],
+                                  ),
+                                  child: const Icon(
                                     Icons.flight_takeoff_rounded,
                                     color: AppColors.primary,
-                                    size: 20),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      holiday.name.isNotEmpty
-                                          ? holiday.name
-                                          : 'Untitled Holiday',
-                                      style: AppTextStyles.bodyBold,
-                                    ),
-                                    if (holiday.startDate.isNotEmpty)
+                                    size: 20,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
                                       Text(
-                                        _dateRange(holiday.startDate,
-                                            holiday.endDate),
-                                        style: AppTextStyles.caption
-                                            .copyWith(
-                                                color: AppColors
-                                                    .textSecondary),
+                                        holiday.name.isNotEmpty
+                                            ? holiday.name
+                                            : 'Untitled Holiday',
+                                        style: AppTextStyles.bodyBold,
                                       ),
+                                      if (holiday.startDate.isNotEmpty)
+                                        Text(
+                                          _dateRange(
+                                            holiday.startDate,
+                                            holiday.endDate,
+                                          ),
+                                          style: AppTextStyles.caption.copyWith(
+                                            color: AppColors.textSecondary,
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                ),
+                                const Icon(
+                                  Icons.edit_rounded,
+                                  color: AppColors.textMuted,
+                                  size: 18,
+                                ),
+                                const SizedBox(width: 4),
+                                const Icon(
+                                  Icons.chevron_right_rounded,
+                                  color: AppColors.textMuted,
+                                  size: 22,
+                                ),
+                              ],
+                            ),
+                            if (holiday.startDate.isNotEmpty) ...[
+                              const SizedBox(height: 8),
+                              Padding(
+                                padding: const EdgeInsets.only(left: 48),
+                                child: Row(
+                                  children: [
+                                    const Icon(
+                                      Icons.schedule_rounded,
+                                      size: 14,
+                                      color: AppColors.textMuted,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      formatDateRelative(holiday.startDate),
+                                      style: AppTextStyles.caption.copyWith(
+                                        fontWeight: FontWeight.w600,
+                                        color: _countdownColor(
+                                          holiday.startDate,
+                                        ),
+                                      ),
+                                    ),
                                   ],
                                 ),
                               ),
-                              const Icon(Icons.edit_rounded,
-                                  color: AppColors.textMuted, size: 18),
-                              const SizedBox(width: 4),
-                              const Icon(Icons.chevron_right_rounded,
-                                  color: AppColors.textMuted, size: 22),
                             ],
-                          ),
-                          if (holiday.startDate.isNotEmpty) ...[
-                            const SizedBox(height: 8),
-                            Padding(
-                              padding: const EdgeInsets.only(left: 48),
-                              child: Row(
-                                children: [
-                                  const Icon(Icons.schedule_rounded,
-                                      size: 14, color: AppColors.textMuted),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    formatDateRelative(holiday.startDate),
-                                    style: AppTextStyles.caption.copyWith(
-                                      fontWeight: FontWeight.w600,
-                                      color: _countdownColor(
-                                          holiday.startDate),
-                                    ),
+                            if (holiday.notes.isNotEmpty) ...[
+                              const SizedBox(height: 6),
+                              Padding(
+                                padding: const EdgeInsets.only(left: 48),
+                                child: Text(
+                                  holiday.notes,
+                                  style: AppTextStyles.body.copyWith(
+                                    color: AppColors.textSecondary,
                                   ),
-                                ],
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
                               ),
-                            ),
+                            ],
                           ],
-                          if (holiday.notes.isNotEmpty) ...[
-                            const SizedBox(height: 6),
-                            Padding(
-                              padding: const EdgeInsets.only(left: 48),
-                              child: Text(
-                                holiday.notes,
-                                style: AppTextStyles.body.copyWith(
-                                    color: AppColors.textSecondary),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
-                        ],
+                        ),
                       ),
                     ),
                   ),
@@ -349,116 +411,133 @@ class _HolidayDetailScreenState extends ConsumerState<HolidayDetailScreen> {
                       spacing: 6,
                       runSpacing: 6,
                       children: [
-                        _sectionChip('travelers', 'Travellers',
-                            Icons.people_rounded),
-                        _sectionChip('accommodation', 'Accommodation',
-                            Icons.hotel_rounded),
                         _sectionChip(
-                            'travel', 'Travel', Icons.flight_rounded),
-                        _sectionChip('car_hire', 'Car Hire',
-                            Icons.directions_car_rounded),
-                        _sectionChip('activities', 'Activities',
-                            Icons.local_activity_rounded),
-                        _sectionChip('itinerary', 'Itinerary',
-                            Icons.calendar_today_rounded),
-                        _sectionChip('documents', 'Documents',
-                            Icons.attach_file_rounded),
+                          'travelers',
+                          'Travellers',
+                          Icons.people_rounded,
+                        ),
+                        _sectionChip(
+                          'accommodation',
+                          'Accommodation',
+                          Icons.hotel_rounded,
+                        ),
+                        _sectionChip('travel', 'Travel', Icons.flight_rounded),
+                        _sectionChip(
+                          'car_hire',
+                          'Car Hire',
+                          Icons.directions_car_rounded,
+                        ),
+                        _sectionChip(
+                          'activities',
+                          'Activities',
+                          Icons.local_activity_rounded,
+                        ),
+                        _sectionChip(
+                          'itinerary',
+                          'Itinerary',
+                          Icons.calendar_today_rounded,
+                        ),
+                        _sectionChip(
+                          'documents',
+                          'Documents',
+                          Icons.attach_file_rounded,
+                        ),
                       ],
                     ),
                   ),
                 // Sub-entity sections
                 if (_enabledSections.contains('travelers'))
-                _SectionPanel(
-                  icon: Icons.people_rounded,
-                  iconColor: AppColors.primary,
-                  title: 'Travellers',
-                  count: travelers.length,
-                  onTap: () =>
-                      context.push('/travelers/${widget.holidayId}'),
-                  children: travelers
-                      .map((t) => t.name.isNotEmpty ? t.name : 'Unnamed')
-                      .toList(),
-                ),
+                  _SectionPanel(
+                    icon: Icons.people_rounded,
+                    iconColor: const Color(0xFF283593),
+                    title: 'Travellers',
+                    count: travelers.length,
+                    onTap: () => context.push('/travelers/${widget.holidayId}'),
+                    children: travelers
+                        .map((t) => t.name.isNotEmpty ? t.name : 'Unnamed')
+                        .toList(),
+                  ),
                 if (_enabledSections.contains('accommodation'))
-                _SectionPanel(
-                  icon: Icons.hotel_rounded,
-                  iconColor: const Color(0xFF1565C0),
-                  title: 'Accommodation',
-                  count: accommodations.length,
-                  onTap: () =>
-                      context.push('/accommodations/${widget.holidayId}'),
-                  children: accommodations
-                      .map((a) => a.name.isNotEmpty ? a.name : 'Unnamed')
-                      .toList(),
-                ),
+                  _SectionPanel(
+                    icon: Icons.hotel_rounded,
+                    iconColor: const Color(0xFF2E7D32),
+                    title: 'Accommodation',
+                    count: accommodations.length,
+                    onTap: () =>
+                        context.push('/accommodations/${widget.holidayId}'),
+                    children: accommodations
+                        .map((a) => a.name.isNotEmpty ? a.name : 'Unnamed')
+                        .toList(),
+                  ),
                 if (_enabledSections.contains('travel'))
-                _SectionPanel(
-                  icon: Icons.flight_rounded,
-                  iconColor: const Color(0xFF00695C),
-                  title: 'Travel',
-                  count: travelLegs.length,
-                  onTap: () =>
-                      context.push('/travel/${widget.holidayId}'),
-                  children: travelLegs.map((t) {
-                    final route = [
-                      if (t.from.isNotEmpty) t.from,
-                      if (t.to.isNotEmpty) t.to,
-                    ].join(' → ');
-                    return route.isNotEmpty ? route : 'Unnamed';
-                  }).toList(),
-                ),
+                  _SectionPanel(
+                    icon: Icons.flight_rounded,
+                    iconColor: const Color(0xFF1565C0),
+                    title: 'Travel',
+                    count: travelLegs.length,
+                    onTap: () => context.push('/travel/${widget.holidayId}'),
+                    children: travelLegs.map((t) {
+                      final route = [
+                        if (t.from.isNotEmpty) t.from,
+                        if (t.to.isNotEmpty) t.to,
+                      ].join(' → ');
+                      return route.isNotEmpty ? route : 'Unnamed';
+                    }).toList(),
+                  ),
                 if (_enabledSections.contains('car_hire'))
-                _SectionPanel(
-                  icon: Icons.directions_car_rounded,
-                  iconColor: const Color(0xFFFF9800),
-                  title: 'Car Hire',
-                  count: carHires.length,
-                  onTap: () =>
-                      context.push('/car-hire/${widget.holidayId}'),
-                  children: carHires
-                      .map((c) =>
-                          c.company.isNotEmpty ? c.company : 'Unnamed')
-                      .toList(),
-                ),
+                  _SectionPanel(
+                    icon: Icons.directions_car_rounded,
+                    iconColor: const Color(0xFFE65100),
+                    title: 'Car Hire',
+                    count: carHires.length,
+                    onTap: () => context.push('/car-hire/${widget.holidayId}'),
+                    children: carHires
+                        .map(
+                          (c) => c.company.isNotEmpty ? c.company : 'Unnamed',
+                        )
+                        .toList(),
+                  ),
                 if (_enabledSections.contains('activities'))
-                _SectionPanel(
-                  icon: Icons.local_activity_rounded,
-                  iconColor: const Color(0xFFE53935),
-                  title: 'Activities',
-                  count: activities.length,
-                  onTap: () =>
-                      context.push('/activities/${widget.holidayId}'),
-                  children: activities
-                      .map((a) => a.name.isNotEmpty ? a.name : 'Unnamed')
-                      .toList(),
-                ),
+                  _SectionPanel(
+                    icon: Icons.local_activity_rounded,
+                    iconColor: const Color(0xFFC62828),
+                    title: 'Activities',
+                    count: activities.length,
+                    onTap: () =>
+                        context.push('/activities/${widget.holidayId}'),
+                    children: activities
+                        .map((a) => a.name.isNotEmpty ? a.name : 'Unnamed')
+                        .toList(),
+                  ),
                 if (_enabledSections.contains('itinerary'))
-                _SectionPanel(
-                  icon: Icons.calendar_today_rounded,
-                  iconColor: const Color(0xFF6A1B9A),
-                  title: 'Itinerary',
-                  count: itineraryDays.length,
-                  onTap: () =>
-                      context.push('/itinerary/${widget.holidayId}'),
-                  children: itineraryDays
-                      .map((d) => d.title.isNotEmpty
-                          ? 'Day ${d.dayNumber}: ${d.title}'
-                          : 'Day ${d.dayNumber}')
-                      .toList(),
-                ),
+                  _SectionPanel(
+                    icon: Icons.calendar_today_rounded,
+                    iconColor: const Color(0xFF00695C),
+                    title: 'Itinerary',
+                    count: itineraryDays.length,
+                    onTap: () => context.push('/itinerary/${widget.holidayId}'),
+                    children: itineraryDays
+                        .map(
+                          (d) => d.title.isNotEmpty
+                              ? 'Day ${d.dayNumber}: ${d.title}'
+                              : 'Day ${d.dayNumber}',
+                        )
+                        .toList(),
+                  ),
                 if (_enabledSections.contains('documents'))
-                _SectionPanel(
-                  icon: Icons.attach_file_rounded,
-                  iconColor: const Color(0xFF5D4037),
-                  title: 'Documents',
-                  count: _documents.length,
-                  onTap: () => context
-                      .push('/documents/holiday/${widget.holidayId}'),
-                  children: _documents
-                      .map((d) =>
-                          d.filename.isNotEmpty ? d.filename : 'Unnamed')
-                      .toList(),
-                ),
+                  _SectionPanel(
+                    icon: Icons.attach_file_rounded,
+                    iconColor: const Color(0xFF5D4037),
+                    title: 'Documents',
+                    count: _documents.length,
+                    onTap: () =>
+                        context.push('/documents/holiday/${widget.holidayId}'),
+                    children: _documents
+                        .map(
+                          (d) => d.filename.isNotEmpty ? d.filename : 'Unnamed',
+                        )
+                        .toList(),
+                  ),
                 const SizedBox(height: 16),
 
                 // Total cost summary
@@ -472,8 +551,7 @@ class _HolidayDetailScreenState extends ConsumerState<HolidayDetailScreen> {
                           Container(
                             padding: const EdgeInsets.all(10),
                             decoration: BoxDecoration(
-                              color:
-                                  AppColors.primary.withValues(alpha: 0.15),
+                              color: AppColors.primary.withValues(alpha: 0.15),
                               shape: BoxShape.circle,
                             ),
                             child: const Icon(
@@ -487,9 +565,12 @@ class _HolidayDetailScreenState extends ConsumerState<HolidayDetailScreen> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text('Estimated Total Cost',
-                                    style: AppTextStyles.caption.copyWith(
-                                        fontWeight: FontWeight.w600)),
+                                Text(
+                                  'Estimated Total Cost',
+                                  style: AppTextStyles.caption.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
                                 const SizedBox(height: 2),
                                 Text(
                                   formatGBP(totalCost),
@@ -515,28 +596,35 @@ class _HolidayDetailScreenState extends ConsumerState<HolidayDetailScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Cost Breakdown',
-                              style: AppTextStyles.bodyBold),
+                          Text('Cost Breakdown', style: AppTextStyles.bodyBold),
                           const SizedBox(height: 12),
                           _CostRow(
                             label: 'Accommodation',
                             amount: accommodations.fold(
-                                0.0, (sum, a) => sum + a.cost),
+                              0.0,
+                              (sum, a) => sum + a.cost,
+                            ),
                           ),
                           _CostRow(
                             label: 'Travel',
                             amount: travelLegs.fold(
-                                0.0, (sum, t) => sum + t.cost),
+                              0.0,
+                              (sum, t) => sum + t.cost,
+                            ),
                           ),
                           _CostRow(
                             label: 'Car Hire',
                             amount: carHires.fold(
-                                0.0, (sum, c) => sum + c.totalCost),
+                              0.0,
+                              (sum, c) => sum + c.totalCost,
+                            ),
                           ),
                           _CostRow(
                             label: 'Activities',
                             amount: activities.fold(
-                                0.0, (sum, a) => sum + a.cost),
+                              0.0,
+                              (sum, a) => sum + a.cost,
+                            ),
                           ),
                         ],
                       ),
@@ -594,74 +682,106 @@ class _SectionPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: iconColor.withValues(alpha: 0.12),
-                      shape: BoxShape.circle,
+      clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Ink(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Colors.white, iconColor.withValues(alpha: 0.06)],
+            begin: Alignment.centerLeft,
+            end: Alignment.centerRight,
+          ),
+        ),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(16),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            iconColor.withValues(alpha: 0.15),
+                            iconColor.withValues(alpha: 0.08),
+                          ],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: iconColor.withValues(alpha: 0.15),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Icon(icon, color: iconColor, size: 20),
                     ),
-                    child: Icon(icon, color: iconColor, size: 20),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(title, style: AppTextStyles.bodyBold),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: count > 0
-                          ? AppColors.softPurple
-                          : AppColors.softLilac,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      '$count',
-                      style: AppTextStyles.caption.copyWith(
-                        fontWeight: FontWeight.w700,
+                    const SizedBox(width: 12),
+                    Expanded(child: Text(title, style: AppTextStyles.bodyBold)),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 3,
+                      ),
+                      decoration: BoxDecoration(
                         color: count > 0
-                            ? AppColors.primary
-                            : AppColors.textMuted,
+                            ? iconColor.withValues(alpha: 0.12)
+                            : AppColors.softLilac,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        '$count',
+                        style: AppTextStyles.caption.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: count > 0 ? iconColor : AppColors.textMuted,
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  Icon(Icons.chevron_right_rounded,
-                      color: AppColors.textMuted, size: 22),
-                ],
-              ),
-              if (children.isNotEmpty) ...[
-                const SizedBox(height: 10),
-                ...children.map((item) => Padding(
+                    const SizedBox(width: 8),
+                    Icon(
+                      Icons.chevron_right_rounded,
+                      color: AppColors.textMuted,
+                      size: 22,
+                    ),
+                  ],
+                ),
+                if (children.isNotEmpty) ...[
+                  const SizedBox(height: 10),
+                  ...children.map(
+                    (item) => Padding(
                       padding: const EdgeInsets.only(left: 48, bottom: 4),
                       child: Row(
                         children: [
-                          Icon(Icons.circle,
-                              size: 5, color: AppColors.textMuted),
+                          Icon(
+                            Icons.circle,
+                            size: 5,
+                            color: AppColors.textMuted,
+                          ),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
                               item,
-                              style: AppTextStyles.body
-                                  .copyWith(color: AppColors.textSecondary),
+                              style: AppTextStyles.body.copyWith(
+                                color: AppColors.textSecondary,
+                              ),
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
                         ],
                       ),
-                    )),
+                    ),
+                  ),
+                ],
               ],
-            ],
+            ),
           ),
         ),
       ),
@@ -688,9 +808,12 @@ class _CostRow extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(label, style: AppTextStyles.body),
-          Text(formatGBP(amount),
-              style: AppTextStyles.bodyBold
-                  .copyWith(color: AppColors.textSecondary)),
+          Text(
+            formatGBP(amount),
+            style: AppTextStyles.bodyBold.copyWith(
+              color: AppColors.textSecondary,
+            ),
+          ),
         ],
       ),
     );

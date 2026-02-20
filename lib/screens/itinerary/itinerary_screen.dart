@@ -23,15 +23,16 @@ class ItineraryScreen extends ConsumerWidget {
       showBackButton: true,
       title: 'Itinerary',
       overlayFabIcon: Icons.add_rounded,
-      overlayFabOnPressed: () =>
-          context.push('/add-itinerary-day/$holidayId'),
+      overlayFabOnPressed: () => context.push('/add-itinerary-day/$holidayId'),
       body: daysAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(
           child: Padding(
             padding: const EdgeInsets.all(24),
-            child: Text('Error loading itinerary: $e',
-                style: AppTextStyles.body.copyWith(color: AppColors.danger)),
+            child: Text(
+              'Error loading itinerary: $e',
+              style: AppTextStyles.body.copyWith(color: AppColors.danger),
+            ),
           ),
         ),
         data: (days) {
@@ -40,8 +41,7 @@ class ItineraryScreen extends ConsumerWidget {
               message: 'No itinerary yet',
               subtitle: 'Plan your trip day by day',
               actionLabel: 'Add Day',
-              onAction: () =>
-                  context.push('/add-itinerary-day/$holidayId'),
+              onAction: () => context.push('/add-itinerary-day/$holidayId'),
             );
           }
 
@@ -56,10 +56,9 @@ class ItineraryScreen extends ConsumerWidget {
               return _DayCard(
                 day: day,
                 holidayId: holidayId,
-                onEdit: () => context.push(
-                    '/edit-itinerary-day/$holidayId/${day.id}'),
-                onDelete: () =>
-                    _confirmDelete(context, ref, day),
+                onEdit: () =>
+                    context.push('/edit-itinerary-day/$holidayId/${day.id}'),
+                onDelete: () => _confirmDelete(context, ref, day),
               );
             },
           );
@@ -68,14 +67,12 @@ class ItineraryScreen extends ConsumerWidget {
     );
   }
 
-  void _confirmDelete(
-      BuildContext context, WidgetRef ref, ItineraryDay day) {
+  void _confirmDelete(BuildContext context, WidgetRef ref, ItineraryDay day) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Delete Day?'),
-        content: Text(
-            'Remove "Day ${day.dayNumber} - ${day.title}"?'),
+        content: Text('Remove "Day ${day.dayNumber} - ${day.title}"?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
@@ -88,8 +85,10 @@ class ItineraryScreen extends ConsumerWidget {
                   .read(itineraryDaysProvider(holidayId).notifier)
                   .deleteItineraryDay(day.id);
             },
-            child: const Text('Delete',
-                style: TextStyle(color: AppColors.danger)),
+            child: const Text(
+              'Delete',
+              style: TextStyle(color: AppColors.danger),
+            ),
           ),
         ],
       ),
@@ -112,85 +111,97 @@ class _DayCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    const sectionColor = Color(0xFF00695C);
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
+      clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       elevation: 2,
       shadowColor: AppColors.cardShadow,
-      child: InkWell(
-        onTap: onEdit,
-        borderRadius: BorderRadius.circular(14),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    width: 42,
-                    height: 42,
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [AppColors.primaryLight, AppColors.primary],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
+      child: Ink(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Colors.white, sectionColor.withValues(alpha: 0.06)],
+            begin: Alignment.centerLeft,
+            end: Alignment.centerRight,
+          ),
+        ),
+        child: InkWell(
+          onTap: onEdit,
+          borderRadius: BorderRadius.circular(14),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      width: 42,
+                      height: 42,
+                      decoration: BoxDecoration(
+                        color: sectionColor.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Center(
-                      child: Text(
-                        '${day.dayNumber}',
-                        style: AppTextStyles.subheading
-                            .copyWith(color: Colors.white, fontSize: 16),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Day ${day.dayNumber}${day.title.isNotEmpty ? ' - ${day.title}' : ''}',
-                          style: AppTextStyles.subheading.copyWith(fontSize: 16),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        if (day.date.isNotEmpty) ...[
-                          const SizedBox(height: 2),
-                          Text(
-                            formatDateUK(day.date),
-                            style: AppTextStyles.caption,
+                      child: Center(
+                        child: Text(
+                          '${day.dayNumber}',
+                          style: AppTextStyles.subheading.copyWith(
+                            color: sectionColor,
+                            fontSize: 16,
                           ),
-                        ],
-                      ],
+                        ),
+                      ),
                     ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.edit_outlined, size: 20),
-                    color: AppColors.primary,
-                    onPressed: onEdit,
-                    tooltip: 'Edit',
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.delete_outline_rounded, size: 20),
-                    color: AppColors.danger,
-                    onPressed: onDelete,
-                    tooltip: 'Delete',
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Day ${day.dayNumber}${day.title.isNotEmpty ? ' - ${day.title}' : ''}',
+                            style: AppTextStyles.subheading.copyWith(
+                              fontSize: 16,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          if (day.date.isNotEmpty) ...[
+                            const SizedBox(height: 2),
+                            Text(
+                              formatDateUK(day.date),
+                              style: AppTextStyles.caption,
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.edit_outlined, size: 20),
+                      color: sectionColor,
+                      onPressed: onEdit,
+                      tooltip: 'Edit',
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.delete_outline_rounded, size: 20),
+                      color: AppColors.danger,
+                      onPressed: onDelete,
+                      tooltip: 'Delete',
+                    ),
+                  ],
+                ),
+                if (day.description.isNotEmpty) ...[
+                  const SizedBox(height: 10),
+                  Text(
+                    day.description,
+                    style: AppTextStyles.body.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
-              ),
-              if (day.description.isNotEmpty) ...[
-                const SizedBox(height: 10),
-                Text(
-                  day.description,
-                  style: AppTextStyles.body
-                      .copyWith(color: AppColors.textSecondary),
-                  maxLines: 3,
-                  overflow: TextOverflow.ellipsis,
-                ),
               ],
-            ],
+            ),
           ),
         ),
       ),

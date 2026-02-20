@@ -7,9 +7,7 @@ void main() {
   WidgetsFlutterBinding.ensureInitialized();
 
   runApp(
-    const ProviderScope(
-      child: _AppLifecycleWrapper(child: MyHolidaysApp()),
-    ),
+    const ProviderScope(child: _AppLifecycleWrapper(child: MyHolidaysApp())),
   );
 }
 
@@ -39,7 +37,10 @@ class _AppLifecycleWrapperState extends State<_AppLifecycleWrapper>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Include `hidden` — on desktop it fires before `paused` and gives the
+    // async I/O more time to complete before the engine shuts down.
     if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.hidden ||
         state == AppLifecycleState.detached) {
       _backupIfDue();
     }
@@ -49,8 +50,7 @@ class _AppLifecycleWrapperState extends State<_AppLifecycleWrapper>
     try {
       final info = await BackupService.getAutoBackupInfo();
       if (info != null) {
-        final hoursSince =
-            DateTime.now().difference(info.timestamp).inHours;
+        final hoursSince = DateTime.now().difference(info.timestamp).inHours;
         if (hoursSince < 4) return;
       }
       await BackupService.createAutoBackup();

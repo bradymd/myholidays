@@ -25,8 +25,7 @@ class AddEditActivityScreen extends ConsumerStatefulWidget {
       _AddEditActivityScreenState();
 }
 
-class _AddEditActivityScreenState
-    extends ConsumerState<AddEditActivityScreen> {
+class _AddEditActivityScreenState extends ConsumerState<AddEditActivityScreen> {
   final _formKey = GlobalKey<FormState>();
 
   final _nameController = TextEditingController();
@@ -84,8 +83,7 @@ class _AddEditActivityScreenState
     _loaded = true;
 
     if (widget.editActivityId != null) {
-      final existing =
-          activities.where((a) => a.id == widget.editActivityId);
+      final existing = activities.where((a) => a.id == widget.editActivityId);
       if (existing.isNotEmpty) {
         final activity = existing.first;
         _isEdit = true;
@@ -96,8 +94,9 @@ class _AddEditActivityScreenState
         _dateController.text = _displayDate(activity.date);
         _timeController.text = activity.time;
         _locationController.text = activity.location;
-        _costController.text =
-            activity.cost > 0 ? activity.cost.toString() : '';
+        _costController.text = activity.cost > 0
+            ? activity.cost.toString()
+            : '';
         _bookingRefController.text = activity.bookingReference;
         _notesController.text = activity.notes;
       }
@@ -108,8 +107,14 @@ class _AddEditActivityScreenState
     }
   }
 
-  Future<void> _pickDate(TextEditingController controller, {String? defaultDate}) async {
-    final initial = DateTime.tryParse(_date) ?? DateTime.tryParse(defaultDate ?? '') ?? DateTime.now();
+  Future<void> _pickDate(
+    TextEditingController controller, {
+    String? defaultDate,
+  }) async {
+    final initial =
+        DateTime.tryParse(_date) ??
+        DateTime.tryParse(defaultDate ?? '') ??
+        DateTime.now();
     final picked = await showDatePicker(
       context: context,
       initialDate: initial,
@@ -118,7 +123,8 @@ class _AddEditActivityScreenState
       locale: const Locale('en', 'GB'),
     );
     if (picked != null) {
-      final iso = '${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}';
+      final iso =
+          '${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}';
       setState(() {
         _date = iso;
         controller.text = _displayDate(iso);
@@ -142,8 +148,7 @@ class _AddEditActivityScreenState
       notes: _notesController.text.trim(),
     );
 
-    final notifier =
-        ref.read(activitiesProvider(widget.holidayId).notifier);
+    final notifier = ref.read(activitiesProvider(widget.holidayId).notifier);
     if (_isEdit) {
       await notifier.updateActivity(activity);
     } else {
@@ -161,11 +166,9 @@ class _AddEditActivityScreenState
 
   @override
   Widget build(BuildContext context) {
-    final activitiesAsync =
-        ref.watch(activitiesProvider(widget.holidayId));
+    final activitiesAsync = ref.watch(activitiesProvider(widget.holidayId));
 
-    activitiesAsync
-        .whenData((activities) => _populateFromExisting(activities));
+    activitiesAsync.whenData((activities) => _populateFromExisting(activities));
 
     return AppScaffold(
       title: _isEdit ? 'Edit Activity' : 'Add Activity',
@@ -183,104 +186,142 @@ class _AddEditActivityScreenState
     return Stack(
       children: [
         SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(16),
           child: Form(
             key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // Name
-                Text('Name', style: AppTextStyles.label),
-                const SizedBox(height: 6),
-                TextFormField(
-                  controller: _nameController,
-                  decoration:
-                      const InputDecoration(hintText: 'e.g. Snorkelling tour'),
-                  textCapitalization: TextCapitalization.sentences,
-                  validator: (v) =>
-                      (v == null || v.trim().isEmpty) ? 'Name is required' : null,
-                ),
-                const SizedBox(height: 16),
-
-                // Date
-                Text('Date', style: AppTextStyles.label),
-                const SizedBox(height: 6),
-                TextFormField(
-                  controller: _dateController,
-                  decoration: InputDecoration(
-                    hintText: 'DD/MM/YYYY',
-                    suffixIcon: IconButton(
-                      icon: const Icon(Icons.calendar_today_rounded, size: 20),
-                      onPressed: () => _pickDate(_dateController, defaultDate: _holidayStartDate),
-                    ),
+            child: Card(
+              clipBehavior: Clip.antiAlias,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Ink(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Colors.white, Color(0x0FC62828)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
-                  readOnly: true,
-                  onTap: () => _pickDate(_dateController, defaultDate: _holidayStartDate),
                 ),
-                const SizedBox(height: 16),
+                child: Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // Name
+                      Text('Name', style: AppTextStyles.label),
+                      const SizedBox(height: 6),
+                      TextFormField(
+                        controller: _nameController,
+                        decoration: const InputDecoration(
+                          hintText: 'e.g. Snorkelling tour',
+                        ),
+                        textCapitalization: TextCapitalization.sentences,
+                        validator: (v) => (v == null || v.trim().isEmpty)
+                            ? 'Name is required'
+                            : null,
+                      ),
+                      const SizedBox(height: 16),
 
-                // Time
-                Text('Time', style: AppTextStyles.label),
-                const SizedBox(height: 6),
-                TextFormField(
-                  controller: _timeController,
-                  decoration: const InputDecoration(hintText: 'e.g. 09:00'),
-                  textInputAction: TextInputAction.next,
-                ),
-                const SizedBox(height: 16),
+                      // Date
+                      Text('Date', style: AppTextStyles.label),
+                      const SizedBox(height: 6),
+                      TextFormField(
+                        controller: _dateController,
+                        decoration: InputDecoration(
+                          hintText: 'DD/MM/YYYY',
+                          suffixIcon: IconButton(
+                            icon: const Icon(
+                              Icons.calendar_today_rounded,
+                              size: 20,
+                            ),
+                            onPressed: () => _pickDate(
+                              _dateController,
+                              defaultDate: _holidayStartDate,
+                            ),
+                          ),
+                        ),
+                        readOnly: true,
+                        onTap: () => _pickDate(
+                          _dateController,
+                          defaultDate: _holidayStartDate,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
 
-                // Location
-                Text('Location', style: AppTextStyles.label),
-                const SizedBox(height: 6),
-                TextFormField(
-                  controller: _locationController,
-                  decoration: const InputDecoration(hintText: 'Where is it?'),
-                  textCapitalization: TextCapitalization.words,
-                ),
-                const SizedBox(height: 16),
+                      // Time
+                      Text('Time', style: AppTextStyles.label),
+                      const SizedBox(height: 6),
+                      TextFormField(
+                        controller: _timeController,
+                        decoration: const InputDecoration(
+                          hintText: 'e.g. 09:00',
+                        ),
+                        textInputAction: TextInputAction.next,
+                      ),
+                      const SizedBox(height: 16),
 
-                // Cost
-                Text('Cost', style: AppTextStyles.label),
-                const SizedBox(height: 6),
-                TextFormField(
-                  controller: _costController,
-                  decoration: const InputDecoration(
-                    hintText: '0.00',
-                    prefixText: '\u00A3 ',
+                      // Location
+                      Text('Location', style: AppTextStyles.label),
+                      const SizedBox(height: 6),
+                      TextFormField(
+                        controller: _locationController,
+                        decoration: const InputDecoration(
+                          hintText: 'Where is it?',
+                        ),
+                        textCapitalization: TextCapitalization.words,
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Cost
+                      Text('Cost', style: AppTextStyles.label),
+                      const SizedBox(height: 6),
+                      TextFormField(
+                        controller: _costController,
+                        decoration: const InputDecoration(
+                          hintText: '0.00',
+                          prefixText: '\u00A3 ',
+                        ),
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Booking Reference
+                      Text('Booking Reference', style: AppTextStyles.label),
+                      const SizedBox(height: 6),
+                      TextFormField(
+                        controller: _bookingRefController,
+                        decoration: const InputDecoration(
+                          hintText: 'Reference number',
+                        ),
+                        textCapitalization: TextCapitalization.characters,
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Notes
+                      Text('Notes', style: AppTextStyles.label),
+                      const SizedBox(height: 6),
+                      TextFormField(
+                        controller: _notesController,
+                        decoration: const InputDecoration(
+                          hintText: 'Optional notes',
+                        ),
+                        maxLines: 3,
+                        textCapitalization: TextCapitalization.sentences,
+                      ),
+
+                      // Document attachments
+                      DocumentAttachments(
+                        parentType: 'activity',
+                        parentId: _entityId,
+                      ),
+
+                      const SizedBox(height: 80),
+                    ],
                   ),
-                  keyboardType:
-                      const TextInputType.numberWithOptions(decimal: true),
                 ),
-                const SizedBox(height: 16),
-
-                // Booking Reference
-                Text('Booking Reference', style: AppTextStyles.label),
-                const SizedBox(height: 6),
-                TextFormField(
-                  controller: _bookingRefController,
-                  decoration: const InputDecoration(hintText: 'Reference number'),
-                  textCapitalization: TextCapitalization.characters,
-                ),
-                const SizedBox(height: 16),
-
-                // Notes
-                Text('Notes', style: AppTextStyles.label),
-                const SizedBox(height: 6),
-                TextFormField(
-                  controller: _notesController,
-                  decoration: const InputDecoration(hintText: 'Optional notes'),
-                  maxLines: 3,
-                  textCapitalization: TextCapitalization.sentences,
-                ),
-
-                // Document attachments
-                DocumentAttachments(
-                  parentType: 'activity',
-                  parentId: _entityId,
-                ),
-
-                const SizedBox(height: 80),
-              ],
+              ),
             ),
           ),
         ),
@@ -289,16 +330,24 @@ class _AddEditActivityScreenState
           bottom: 16,
           child: DecoratedBox(
             decoration: BoxDecoration(
-              color: AppColors.primaryLight.withValues(alpha: 0.7),
+              color: AppColors.primary.withValues(alpha: 0.75),
               shape: BoxShape.circle,
               boxShadow: const [
-                BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2)),
+                BoxShadow(
+                  color: Colors.black12,
+                  blurRadius: 4,
+                  offset: Offset(0, 2),
+                ),
               ],
             ),
             child: IconButton(
               onPressed: _saving ? null : _save,
               tooltip: _isEdit ? 'Save' : 'Add',
-              icon: const Icon(Icons.check_rounded, color: Colors.white, size: 22),
+              icon: const Icon(
+                Icons.check_rounded,
+                color: Colors.white,
+                size: 22,
+              ),
               padding: const EdgeInsets.all(10),
               constraints: const BoxConstraints(),
             ),

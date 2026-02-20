@@ -36,7 +36,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           Positioned.fill(
             child: Center(
               child: Opacity(
-                opacity: 0.06,
+                opacity: 0.12,
                 child: Image.asset(
                   'assets/images/holiday-icon.png',
                   width: MediaQuery.of(context).size.width * 0.85,

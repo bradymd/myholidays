@@ -56,11 +56,7 @@ class TravelersScreen extends ConsumerWidget {
     );
   }
 
-  void _confirmDelete(
-    BuildContext context,
-    WidgetRef ref,
-    Traveler traveler,
-  ) {
+  void _confirmDelete(BuildContext context, WidgetRef ref, Traveler traveler) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -105,63 +101,87 @@ class _TravelerCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    const sectionColor = Color(0xFF283593);
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
+      clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       elevation: 1,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                color: AppColors.softLilac,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Icon(
-                Icons.person_rounded,
-                color: AppColors.primary,
-                size: 24,
-              ),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    traveler.name.isNotEmpty ? traveler.name : 'Unnamed',
-                    style: AppTextStyles.bodyBold,
+      child: Ink(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Colors.white, sectionColor.withValues(alpha: 0.06)],
+            begin: Alignment.centerLeft,
+            end: Alignment.centerRight,
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      sectionColor.withValues(alpha: 0.15),
+                      sectionColor.withValues(alpha: 0.08),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
-                  if (traveler.notes.isNotEmpty) ...[
-                    const SizedBox(height: 4),
-                    Text(
-                      traveler.notes,
-                      style: AppTextStyles.caption,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: sectionColor.withValues(alpha: 0.15),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
                     ),
                   ],
-                ],
+                ),
+                child: const Icon(
+                  Icons.person_rounded,
+                  color: sectionColor,
+                  size: 24,
+                ),
               ),
-            ),
-            IconButton(
-              icon: const Icon(Icons.edit_rounded, size: 20),
-              color: AppColors.primary,
-              onPressed: () => context.push(
-                '/edit-traveler/$holidayId/${traveler.id}',
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      traveler.name.isNotEmpty ? traveler.name : 'Unnamed',
+                      style: AppTextStyles.bodyBold,
+                    ),
+                    if (traveler.notes.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        traveler.notes,
+                        style: AppTextStyles.caption,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ],
+                ),
               ),
-              tooltip: 'Edit',
-            ),
-            IconButton(
-              icon: const Icon(Icons.delete_outline_rounded, size: 20),
-              color: AppColors.danger,
-              onPressed: onDelete,
-              tooltip: 'Delete',
-            ),
-          ],
+              IconButton(
+                icon: const Icon(Icons.edit_rounded, size: 20),
+                color: sectionColor,
+                onPressed: () =>
+                    context.push('/edit-traveler/$holidayId/${traveler.id}'),
+                tooltip: 'Edit',
+              ),
+              IconButton(
+                icon: const Icon(Icons.delete_outline_rounded, size: 20),
+                color: AppColors.danger,
+                onPressed: onDelete,
+                tooltip: 'Delete',
+              ),
+            ],
+          ),
         ),
       ),
     );

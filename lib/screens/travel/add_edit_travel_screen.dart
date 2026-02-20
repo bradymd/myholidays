@@ -99,12 +99,12 @@ class _AddEditTravelScreenState extends ConsumerState<AddEditTravelScreen> {
         _isEdit = true;
         _entityId = leg.id;
 
-        final matchedType =
-            TravelLegType.values.where((e) => e.name == leg.type);
+        final matchedType = TravelLegType.values.where(
+          (e) => e.name == leg.type,
+        );
         if (matchedType.isNotEmpty) _type = matchedType.first;
 
-        final matchedMode =
-            TravelMode.values.where((e) => e.name == leg.mode);
+        final matchedMode = TravelMode.values.where((e) => e.name == leg.mode);
         if (matchedMode.isNotEmpty) _mode = matchedMode.first;
 
         _fromController.text = leg.from;
@@ -169,8 +169,7 @@ class _AddEditTravelScreenState extends ConsumerState<AddEditTravelScreen> {
       notes: _notesController.text.trim(),
     );
 
-    final notifier =
-        ref.read(travelLegsProvider(widget.holidayId).notifier);
+    final notifier = ref.read(travelLegsProvider(widget.holidayId).notifier);
     if (_isEdit) {
       await notifier.updateTravelLeg(leg);
     } else {
@@ -208,232 +207,291 @@ class _AddEditTravelScreenState extends ConsumerState<AddEditTravelScreen> {
     return Stack(
       children: [
         SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
-      child: Form(
-        key: _formKey,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Type dropdown
-            Text('Type', style: AppTextStyles.label),
-            const SizedBox(height: 6),
-            DropdownButtonFormField<TravelLegType>(
-              initialValue: _type,
-              decoration: const InputDecoration(),
-              items: TravelLegType.values
-                  .map((t) => DropdownMenuItem(
-                        value: t,
-                        child: Text(t.label),
-                      ))
-                  .toList(),
-              onChanged: (v) {
-                if (v != null) setState(() => _type = v);
-              },
-            ),
-            const SizedBox(height: 16),
+          padding: const EdgeInsets.all(16),
+          child: Form(
+            key: _formKey,
+            child: Card(
+              clipBehavior: Clip.antiAlias,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Ink(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Colors.white, Color(0x0F1565C0)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // Type dropdown
+                      Text('Type', style: AppTextStyles.label),
+                      const SizedBox(height: 6),
+                      DropdownButtonFormField<TravelLegType>(
+                        initialValue: _type,
+                        decoration: const InputDecoration(),
+                        items: TravelLegType.values
+                            .map(
+                              (t) => DropdownMenuItem(
+                                value: t,
+                                child: Text(t.label),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: (v) {
+                          if (v != null) setState(() => _type = v);
+                        },
+                      ),
+                      const SizedBox(height: 16),
 
-            // Mode dropdown
-            Text('Mode', style: AppTextStyles.label),
-            const SizedBox(height: 6),
-            DropdownButtonFormField<TravelMode>(
-              initialValue: _mode,
-              decoration: const InputDecoration(),
-              items: TravelMode.values
-                  .map((m) => DropdownMenuItem(
-                        value: m,
-                        child: Text(m.label),
-                      ))
-                  .toList(),
-              onChanged: (v) {
-                if (v != null) setState(() => _mode = v);
-              },
-            ),
-            const SizedBox(height: 16),
+                      // Mode dropdown
+                      Text('Mode', style: AppTextStyles.label),
+                      const SizedBox(height: 6),
+                      DropdownButtonFormField<TravelMode>(
+                        initialValue: _mode,
+                        decoration: const InputDecoration(),
+                        items: TravelMode.values
+                            .map(
+                              (m) => DropdownMenuItem(
+                                value: m,
+                                child: Text(m.label),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: (v) {
+                          if (v != null) setState(() => _mode = v);
+                        },
+                      ),
+                      const SizedBox(height: 16),
 
-            // From
-            Text('From', style: AppTextStyles.label),
-            const SizedBox(height: 6),
-            TextFormField(
-              controller: _fromController,
-              decoration: const InputDecoration(hintText: 'Departure location'),
-              textCapitalization: TextCapitalization.words,
-            ),
-            const SizedBox(height: 16),
+                      // From
+                      Text('From', style: AppTextStyles.label),
+                      const SizedBox(height: 6),
+                      TextFormField(
+                        controller: _fromController,
+                        decoration: const InputDecoration(
+                          hintText: 'Departure location',
+                        ),
+                        textCapitalization: TextCapitalization.words,
+                      ),
+                      const SizedBox(height: 16),
 
-            // To
-            Text('To', style: AppTextStyles.label),
-            const SizedBox(height: 6),
-            TextFormField(
-              controller: _toController,
-              decoration: const InputDecoration(hintText: 'Arrival location'),
-              textCapitalization: TextCapitalization.words,
-            ),
-            const SizedBox(height: 16),
+                      // To
+                      Text('To', style: AppTextStyles.label),
+                      const SizedBox(height: 6),
+                      TextFormField(
+                        controller: _toController,
+                        decoration: const InputDecoration(
+                          hintText: 'Arrival location',
+                        ),
+                        textCapitalization: TextCapitalization.words,
+                      ),
+                      const SizedBox(height: 16),
 
-            // Departure Date
-            Text('Departure Date', style: AppTextStyles.label),
-            const SizedBox(height: 6),
-            TextFormField(
-              controller: _departureDateController,
-              decoration: InputDecoration(
-                hintText: 'DD/MM/YYYY',
-                suffixIcon: IconButton(
-                  icon: const Icon(Icons.calendar_today_rounded, size: 20),
-                  onPressed: () => _pickDate(
-                    _departureDateController,
-                    defaultDate: _departureDate.isNotEmpty ? _departureDate : _holidayStartDate,
-                    onPicked: (iso) => _departureDate = iso,
+                      // Departure Date
+                      Text('Departure Date', style: AppTextStyles.label),
+                      const SizedBox(height: 6),
+                      TextFormField(
+                        controller: _departureDateController,
+                        decoration: InputDecoration(
+                          hintText: 'DD/MM/YYYY',
+                          suffixIcon: IconButton(
+                            icon: const Icon(
+                              Icons.calendar_today_rounded,
+                              size: 20,
+                            ),
+                            onPressed: () => _pickDate(
+                              _departureDateController,
+                              defaultDate: _departureDate.isNotEmpty
+                                  ? _departureDate
+                                  : _holidayStartDate,
+                              onPicked: (iso) => _departureDate = iso,
+                            ),
+                          ),
+                        ),
+                        readOnly: true,
+                        onTap: () => _pickDate(
+                          _departureDateController,
+                          defaultDate: _departureDate.isNotEmpty
+                              ? _departureDate
+                              : _holidayStartDate,
+                          onPicked: (iso) => _departureDate = iso,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Departure Time
+                      Text('Departure Time', style: AppTextStyles.label),
+                      const SizedBox(height: 6),
+                      TextFormField(
+                        controller: _departureTimeController,
+                        decoration: const InputDecoration(
+                          hintText: 'e.g. 14:30',
+                        ),
+                        textInputAction: TextInputAction.next,
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Arrival Date
+                      Text('Arrival Date', style: AppTextStyles.label),
+                      const SizedBox(height: 6),
+                      TextFormField(
+                        controller: _arrivalDateController,
+                        decoration: InputDecoration(
+                          hintText: _arrivalDate.isEmpty
+                              ? 'Same as departure'
+                              : 'DD/MM/YYYY',
+                          suffixIcon: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (_arrivalDate.isNotEmpty)
+                                IconButton(
+                                  icon: const Icon(
+                                    Icons.clear_rounded,
+                                    size: 20,
+                                  ),
+                                  onPressed: () {
+                                    setState(() {
+                                      _arrivalDate = '';
+                                      _arrivalDateController.clear();
+                                    });
+                                  },
+                                ),
+                              IconButton(
+                                icon: const Icon(
+                                  Icons.calendar_today_rounded,
+                                  size: 20,
+                                ),
+                                onPressed: () => _pickDate(
+                                  _arrivalDateController,
+                                  defaultDate: _arrivalDate.isNotEmpty
+                                      ? _arrivalDate
+                                      : _departureDate.isNotEmpty
+                                      ? _departureDate
+                                      : _holidayStartDate,
+                                  onPicked: (iso) => _arrivalDate = iso,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        readOnly: true,
+                        onTap: () => _pickDate(
+                          _arrivalDateController,
+                          defaultDate: _arrivalDate.isNotEmpty
+                              ? _arrivalDate
+                              : _departureDate.isNotEmpty
+                              ? _departureDate
+                              : _holidayStartDate,
+                          onPicked: (iso) => _arrivalDate = iso,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Arrival Time
+                      Text('Arrival Time', style: AppTextStyles.label),
+                      const SizedBox(height: 6),
+                      TextFormField(
+                        controller: _arrivalTimeController,
+                        decoration: const InputDecoration(
+                          hintText: 'e.g. 18:45',
+                        ),
+                        textInputAction: TextInputAction.next,
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Carrier
+                      Text('Carrier', style: AppTextStyles.label),
+                      const SizedBox(height: 6),
+                      TextFormField(
+                        controller: _carrierController,
+                        decoration: const InputDecoration(
+                          hintText: 'e.g. British Airways',
+                        ),
+                        textCapitalization: TextCapitalization.words,
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Booking Reference
+                      Text('Booking Reference', style: AppTextStyles.label),
+                      const SizedBox(height: 6),
+                      TextFormField(
+                        controller: _bookingRefController,
+                        decoration: const InputDecoration(
+                          hintText: 'Reference number',
+                        ),
+                        textCapitalization: TextCapitalization.characters,
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Cost
+                      Text('Cost', style: AppTextStyles.label),
+                      const SizedBox(height: 6),
+                      TextFormField(
+                        controller: _costController,
+                        decoration: const InputDecoration(
+                          hintText: '0.00',
+                          prefixText: '\u00A3 ',
+                        ),
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Notes
+                      Text('Notes', style: AppTextStyles.label),
+                      const SizedBox(height: 6),
+                      TextFormField(
+                        controller: _notesController,
+                        decoration: const InputDecoration(
+                          hintText: 'Optional notes',
+                        ),
+                        maxLines: 3,
+                        textCapitalization: TextCapitalization.sentences,
+                      ),
+
+                      // Document attachments
+                      DocumentAttachments(
+                        parentType: 'travelLeg',
+                        parentId: _entityId,
+                      ),
+
+                      const SizedBox(height: 80),
+                    ],
                   ),
                 ),
               ),
-              readOnly: true,
-              onTap: () => _pickDate(
-                _departureDateController,
-                defaultDate: _departureDate.isNotEmpty ? _departureDate : _holidayStartDate,
-                onPicked: (iso) => _departureDate = iso,
-              ),
             ),
-            const SizedBox(height: 16),
-
-            // Departure Time
-            Text('Departure Time', style: AppTextStyles.label),
-            const SizedBox(height: 6),
-            TextFormField(
-              controller: _departureTimeController,
-              decoration: const InputDecoration(hintText: 'e.g. 14:30'),
-              textInputAction: TextInputAction.next,
-            ),
-            const SizedBox(height: 16),
-
-            // Arrival Date
-            Text('Arrival Date', style: AppTextStyles.label),
-            const SizedBox(height: 6),
-            TextFormField(
-              controller: _arrivalDateController,
-              decoration: InputDecoration(
-                hintText: _arrivalDate.isEmpty ? 'Same as departure' : 'DD/MM/YYYY',
-                suffixIcon: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (_arrivalDate.isNotEmpty)
-                      IconButton(
-                        icon: const Icon(Icons.clear_rounded, size: 20),
-                        onPressed: () {
-                          setState(() {
-                            _arrivalDate = '';
-                            _arrivalDateController.clear();
-                          });
-                        },
-                      ),
-                    IconButton(
-                      icon: const Icon(Icons.calendar_today_rounded, size: 20),
-                      onPressed: () => _pickDate(
-                        _arrivalDateController,
-                        defaultDate: _arrivalDate.isNotEmpty
-                            ? _arrivalDate
-                            : _departureDate.isNotEmpty
-                                ? _departureDate
-                                : _holidayStartDate,
-                        onPicked: (iso) => _arrivalDate = iso,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              readOnly: true,
-              onTap: () => _pickDate(
-                _arrivalDateController,
-                defaultDate: _arrivalDate.isNotEmpty
-                    ? _arrivalDate
-                    : _departureDate.isNotEmpty
-                        ? _departureDate
-                        : _holidayStartDate,
-                onPicked: (iso) => _arrivalDate = iso,
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // Arrival Time
-            Text('Arrival Time', style: AppTextStyles.label),
-            const SizedBox(height: 6),
-            TextFormField(
-              controller: _arrivalTimeController,
-              decoration: const InputDecoration(hintText: 'e.g. 18:45'),
-              textInputAction: TextInputAction.next,
-            ),
-            const SizedBox(height: 16),
-
-            // Carrier
-            Text('Carrier', style: AppTextStyles.label),
-            const SizedBox(height: 6),
-            TextFormField(
-              controller: _carrierController,
-              decoration:
-                  const InputDecoration(hintText: 'e.g. British Airways'),
-              textCapitalization: TextCapitalization.words,
-            ),
-            const SizedBox(height: 16),
-
-            // Booking Reference
-            Text('Booking Reference', style: AppTextStyles.label),
-            const SizedBox(height: 6),
-            TextFormField(
-              controller: _bookingRefController,
-              decoration: const InputDecoration(hintText: 'Reference number'),
-              textCapitalization: TextCapitalization.characters,
-            ),
-            const SizedBox(height: 16),
-
-            // Cost
-            Text('Cost', style: AppTextStyles.label),
-            const SizedBox(height: 6),
-            TextFormField(
-              controller: _costController,
-              decoration: const InputDecoration(
-                hintText: '0.00',
-                prefixText: '\u00A3 ',
-              ),
-              keyboardType:
-                  const TextInputType.numberWithOptions(decimal: true),
-            ),
-            const SizedBox(height: 16),
-
-            // Notes
-            Text('Notes', style: AppTextStyles.label),
-            const SizedBox(height: 6),
-            TextFormField(
-              controller: _notesController,
-              decoration: const InputDecoration(hintText: 'Optional notes'),
-              maxLines: 3,
-              textCapitalization: TextCapitalization.sentences,
-            ),
-
-            // Document attachments
-            DocumentAttachments(
-              parentType: 'travelLeg',
-              parentId: _entityId,
-            ),
-
-            const SizedBox(height: 80),
-          ],
+          ),
         ),
-      ),
-    ),
         Positioned(
           right: 16,
           bottom: 16,
           child: DecoratedBox(
             decoration: BoxDecoration(
-              color: AppColors.primaryLight.withValues(alpha: 0.7),
+              color: AppColors.primary.withValues(alpha: 0.75),
               shape: BoxShape.circle,
               boxShadow: const [
-                BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2)),
+                BoxShadow(
+                  color: Colors.black12,
+                  blurRadius: 4,
+                  offset: Offset(0, 2),
+                ),
               ],
             ),
             child: IconButton(
               onPressed: _saving ? null : _save,
               tooltip: _isEdit ? 'Save' : 'Add',
-              icon: const Icon(Icons.check_rounded, color: Colors.white, size: 22),
+              icon: const Icon(
+                Icons.check_rounded,
+                color: Colors.white,
+                size: 22,
+              ),
               padding: const EdgeInsets.all(10),
               constraints: const BoxConstraints(),
             ),

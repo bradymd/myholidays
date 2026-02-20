@@ -17,16 +17,14 @@ class AccommodationsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final accommodationsAsync =
-        ref.watch(accommodationsProvider(holidayId));
+    final accommodationsAsync = ref.watch(accommodationsProvider(holidayId));
 
     return AppScaffold(
       title: 'Accommodation',
       useOverlayNav: true,
       showBackButton: true,
       overlayFabIcon: Icons.add_rounded,
-      overlayFabOnPressed: () =>
-          context.push('/add-accommodation/$holidayId'),
+      overlayFabOnPressed: () => context.push('/add-accommodation/$holidayId'),
       body: accommodationsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('Error: $e')),
@@ -36,8 +34,7 @@ class AccommodationsScreen extends ConsumerWidget {
               message: 'No accommodation yet',
               subtitle: 'Add hotels, villas, or other stays',
               actionLabel: 'Add Accommodation',
-              onAction: () =>
-                  context.push('/add-accommodation/$holidayId'),
+              onAction: () => context.push('/add-accommodation/$holidayId'),
             );
           }
 
@@ -52,8 +49,7 @@ class AccommodationsScreen extends ConsumerWidget {
               return _AccommodationCard(
                 accommodation: accommodation,
                 holidayId: holidayId,
-                onDelete: () =>
-                    _confirmDelete(context, ref, accommodation),
+                onDelete: () => _confirmDelete(context, ref, accommodation),
               );
             },
           );
@@ -114,156 +110,187 @@ class _AccommodationCard extends StatelessWidget {
     final hasDeposit = accommodation.depositPaid > 0;
     final hasBalance = accommodation.balanceDue > 0;
 
+    const sectionColor = Color(0xFF2E7D32);
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
+      clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       elevation: 1,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header row: icon, name, action buttons
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: AppColors.softPink,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Icon(
-                    Icons.hotel_rounded,
-                    color: AppColors.accent,
-                    size: 24,
-                  ),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        accommodation.name.isNotEmpty
-                            ? accommodation.name
-                            : 'Unnamed',
-                        style: AppTextStyles.bodyBold,
+      child: Ink(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Colors.white, sectionColor.withValues(alpha: 0.06)],
+            begin: Alignment.centerLeft,
+            end: Alignment.centerRight,
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header row: icon, name, action buttons
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          sectionColor.withValues(alpha: 0.15),
+                          sectionColor.withValues(alpha: 0.08),
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
                       ),
-                      if (accommodation.address.isNotEmpty) ...[
-                        const SizedBox(height: 2),
-                        Text(
-                          accommodation.address,
-                          style: AppTextStyles.caption,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: sectionColor.withValues(alpha: 0.15),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
                         ),
                       ],
-                    ],
+                    ),
+                    child: const Icon(
+                      Icons.hotel_rounded,
+                      color: sectionColor,
+                      size: 24,
+                    ),
                   ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.edit_rounded, size: 20),
-                  color: AppColors.primary,
-                  onPressed: () => context.push(
-                    '/edit-accommodation/$holidayId/${accommodation.id}',
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          accommodation.name.isNotEmpty
+                              ? accommodation.name
+                              : 'Unnamed',
+                          style: AppTextStyles.bodyBold,
+                        ),
+                        if (accommodation.address.isNotEmpty) ...[
+                          const SizedBox(height: 2),
+                          Text(
+                            accommodation.address,
+                            style: AppTextStyles.caption,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ],
+                    ),
                   ),
-                  tooltip: 'Edit',
-                ),
-                IconButton(
-                  icon: const Icon(Icons.delete_outline_rounded, size: 20),
-                  color: AppColors.danger,
-                  onPressed: onDelete,
-                  tooltip: 'Delete',
-                ),
-              ],
-            ),
+                  IconButton(
+                    icon: const Icon(Icons.edit_rounded, size: 20),
+                    color: sectionColor,
+                    onPressed: () => context.push(
+                      '/edit-accommodation/$holidayId/${accommodation.id}',
+                    ),
+                    tooltip: 'Edit',
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.delete_outline_rounded, size: 20),
+                    color: AppColors.danger,
+                    onPressed: onDelete,
+                    tooltip: 'Delete',
+                  ),
+                ],
+              ),
 
-            const SizedBox(height: 12),
-            const Divider(height: 1),
-            const SizedBox(height: 12),
+              const SizedBox(height: 12),
+              const Divider(height: 1),
+              const SizedBox(height: 12),
 
-            // Dates row
-            Row(
-              children: [
-                const Icon(Icons.calendar_today_rounded,
-                    size: 16, color: AppColors.textMuted),
-                const SizedBox(width: 6),
-                Text(
-                  'Check-in: ${formatDateUK(accommodation.checkIn)}',
-                  style: AppTextStyles.caption,
-                ),
-                const SizedBox(width: 16),
-                Text(
-                  'Check-out: ${formatDateUK(accommodation.checkOut)}',
-                  style: AppTextStyles.caption,
-                ),
-              ],
-            ),
-
-            // Cost
-            if (accommodation.cost > 0) ...[
-              const SizedBox(height: 8),
+              // Dates row
               Row(
                 children: [
-                  const Icon(Icons.payments_rounded,
-                      size: 16, color: AppColors.textMuted),
+                  const Icon(
+                    Icons.calendar_today_rounded,
+                    size: 16,
+                    color: AppColors.textMuted,
+                  ),
                   const SizedBox(width: 6),
                   Text(
-                    'Total: ${formatGBP(accommodation.cost)}',
-                    style: AppTextStyles.bodyBold.copyWith(
-                      color: AppColors.primaryDark,
-                    ),
+                    'Check-in: ${formatDateUK(accommodation.checkIn)}',
+                    style: AppTextStyles.caption,
+                  ),
+                  const SizedBox(width: 16),
+                  Text(
+                    'Check-out: ${formatDateUK(accommodation.checkOut)}',
+                    style: AppTextStyles.caption,
                   ),
                 ],
               ),
-            ],
 
-            // Deposit & balance info
-            if (hasDeposit || hasBalance) ...[
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 16,
-                runSpacing: 4,
-                children: [
-                  if (hasDeposit)
-                    _infoChip(
-                      'Deposit: ${formatGBP(accommodation.depositPaid)}',
-                      AppColors.softGreen,
-                      AppColors.success,
+              // Cost
+              if (accommodation.cost > 0) ...[
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.payments_rounded,
+                      size: 16,
+                      color: AppColors.textMuted,
                     ),
-                  if (hasBalance)
-                    _infoChip(
-                      'Balance: ${formatGBP(accommodation.balanceDue)}',
-                      accommodation.balancePaidDate.isNotEmpty
-                          ? AppColors.softGreen
-                          : AppColors.softOrange,
-                      accommodation.balancePaidDate.isNotEmpty
-                          ? AppColors.success
-                          : AppColors.warning,
+                    const SizedBox(width: 6),
+                    Text(
+                      'Total: ${formatGBP(accommodation.cost)}',
+                      style: AppTextStyles.bodyBold.copyWith(
+                        color: AppColors.primaryDark,
+                      ),
                     ),
-                  if (accommodation.balanceDueDate.isNotEmpty &&
-                      accommodation.balancePaidDate.isEmpty)
-                    _infoChip(
-                      'Due: ${formatDateUK(accommodation.balanceDueDate)}',
-                      isDueSoon(accommodation.balanceDueDate)
-                          ? AppColors.softRed
-                          : AppColors.softOrange,
-                      isDueSoon(accommodation.balanceDueDate)
-                          ? AppColors.danger
-                          : AppColors.warning,
-                    ),
-                  if (accommodation.balancePaidDate.isNotEmpty)
-                    _infoChip(
-                      'Paid: ${formatDateUK(accommodation.balancePaidDate)}',
-                      AppColors.softGreen,
-                      AppColors.success,
-                    ),
-                ],
-              ),
+                  ],
+                ),
+              ],
+
+              // Deposit & balance info
+              if (hasDeposit || hasBalance) ...[
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 16,
+                  runSpacing: 4,
+                  children: [
+                    if (hasDeposit)
+                      _infoChip(
+                        'Deposit: ${formatGBP(accommodation.depositPaid)}',
+                        AppColors.softGreen,
+                        AppColors.success,
+                      ),
+                    if (hasBalance)
+                      _infoChip(
+                        'Balance: ${formatGBP(accommodation.balanceDue)}',
+                        accommodation.balancePaidDate.isNotEmpty
+                            ? AppColors.softGreen
+                            : AppColors.softOrange,
+                        accommodation.balancePaidDate.isNotEmpty
+                            ? AppColors.success
+                            : AppColors.warning,
+                      ),
+                    if (accommodation.balanceDueDate.isNotEmpty &&
+                        accommodation.balancePaidDate.isEmpty)
+                      _infoChip(
+                        'Due: ${formatDateUK(accommodation.balanceDueDate)}',
+                        isDueSoon(accommodation.balanceDueDate)
+                            ? AppColors.softRed
+                            : AppColors.softOrange,
+                        isDueSoon(accommodation.balanceDueDate)
+                            ? AppColors.danger
+                            : AppColors.warning,
+                      ),
+                    if (accommodation.balancePaidDate.isNotEmpty)
+                      _infoChip(
+                        'Paid: ${formatDateUK(accommodation.balancePaidDate)}',
+                        AppColors.softGreen,
+                        AppColors.success,
+                      ),
+                  ],
+                ),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );

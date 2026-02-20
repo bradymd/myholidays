@@ -75,8 +75,10 @@ class CarHireScreen extends ConsumerWidget {
                   .read(carHiresProvider(holidayId).notifier)
                   .deleteCarHire(carHire.id);
             },
-            child: const Text('Delete',
-                style: TextStyle(color: AppColors.danger)),
+            child: const Text(
+              'Delete',
+              style: TextStyle(color: AppColors.danger),
+            ),
           ),
         ],
       ),
@@ -97,104 +99,136 @@ class _CarHireCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    const sectionColor = Color(0xFFE65100);
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
+      clipBehavior: Clip.antiAlias,
       elevation: 2,
       shadowColor: AppColors.cardShadow,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header: company + actions
-            Row(
-              children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: AppColors.softMint,
-                    borderRadius: BorderRadius.circular(12),
+      child: Ink(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Colors.white, sectionColor.withValues(alpha: 0.06)],
+            begin: Alignment.centerLeft,
+            end: Alignment.centerRight,
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header: company + actions
+              Row(
+                children: [
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          sectionColor.withValues(alpha: 0.15),
+                          sectionColor.withValues(alpha: 0.08),
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: sectionColor.withValues(alpha: 0.15),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: const Icon(
+                      Icons.directions_car_rounded,
+                      color: sectionColor,
+                      size: 22,
+                    ),
                   ),
-                  child: const Icon(Icons.directions_car_rounded,
-                      color: AppColors.mint, size: 22),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    carHire.company.isNotEmpty
-                        ? carHire.company
-                        : 'Car Hire',
-                    style: AppTextStyles.subheading.copyWith(fontSize: 16),
-                    overflow: TextOverflow.ellipsis,
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      carHire.company.isNotEmpty ? carHire.company : 'Car Hire',
+                      style: AppTextStyles.subheading.copyWith(fontSize: 16),
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.edit_outlined, size: 20),
-                  color: AppColors.primary,
-                  onPressed: () =>
-                      context.push('/edit-car-hire/$holidayId/${carHire.id}'),
-                  tooltip: 'Edit',
-                  visualDensity: VisualDensity.compact,
-                ),
-                IconButton(
-                  icon: const Icon(Icons.delete_outline_rounded, size: 20),
-                  color: AppColors.danger,
-                  onPressed: onDelete,
-                  tooltip: 'Delete',
-                  visualDensity: VisualDensity.compact,
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-
-            // Pickup
-            if (carHire.pickupLocation.isNotEmpty ||
-                carHire.pickupDate.isNotEmpty)
-              _locationRow(
-                label: 'Pickup',
-                location: carHire.pickupLocation,
-                date: carHire.pickupDate,
-                time: carHire.pickupTime,
-                icon: Icons.flight_land_rounded,
+                  IconButton(
+                    icon: const Icon(Icons.edit_outlined, size: 20),
+                    color: sectionColor,
+                    onPressed: () =>
+                        context.push('/edit-car-hire/$holidayId/${carHire.id}'),
+                    tooltip: 'Edit',
+                    visualDensity: VisualDensity.compact,
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.delete_outline_rounded, size: 20),
+                    color: AppColors.danger,
+                    onPressed: onDelete,
+                    tooltip: 'Delete',
+                    visualDensity: VisualDensity.compact,
+                  ),
+                ],
               ),
+              const SizedBox(height: 12),
 
-            if (carHire.pickupDate.isNotEmpty &&
-                carHire.dropoffDate.isNotEmpty)
+              // Pickup
+              if (carHire.pickupLocation.isNotEmpty ||
+                  carHire.pickupDate.isNotEmpty)
+                _locationRow(
+                  label: 'Pickup',
+                  location: carHire.pickupLocation,
+                  date: carHire.pickupDate,
+                  time: carHire.pickupTime,
+                  icon: Icons.flight_land_rounded,
+                ),
+
+              if (carHire.pickupDate.isNotEmpty &&
+                  carHire.dropoffDate.isNotEmpty)
+                const SizedBox(height: 8),
+
+              // Dropoff
+              if (carHire.dropoffLocation.isNotEmpty ||
+                  carHire.dropoffDate.isNotEmpty)
+                _locationRow(
+                  label: 'Dropoff',
+                  location: carHire.dropoffLocation,
+                  date: carHire.dropoffDate,
+                  time: carHire.dropoffTime,
+                  icon: Icons.flight_takeoff_rounded,
+                ),
               const SizedBox(height: 8),
 
-            // Dropoff
-            if (carHire.dropoffLocation.isNotEmpty ||
-                carHire.dropoffDate.isNotEmpty)
-              _locationRow(
-                label: 'Dropoff',
-                location: carHire.dropoffLocation,
-                date: carHire.dropoffDate,
-                time: carHire.dropoffTime,
-                icon: Icons.flight_takeoff_rounded,
+              // Info chips
+              Wrap(
+                spacing: 16,
+                runSpacing: 4,
+                children: [
+                  if (carHire.drivers.isNotEmpty)
+                    _infoChip(Icons.person_rounded, carHire.drivers),
+                  if (carHire.bookingReference.isNotEmpty)
+                    _infoChip(
+                      Icons.confirmation_number_outlined,
+                      carHire.bookingReference,
+                    ),
+                  if (carHire.deposit > 0)
+                    _infoChip(
+                      Icons.account_balance_wallet_outlined,
+                      'Deposit: ${formatGBP(carHire.deposit)}',
+                    ),
+                  if (carHire.totalCost > 0)
+                    _infoChip(
+                      Icons.payments_outlined,
+                      'Total: ${formatGBP(carHire.totalCost)}',
+                    ),
+                ],
               ),
-            const SizedBox(height: 8),
-
-            // Info chips
-            Wrap(
-              spacing: 16,
-              runSpacing: 4,
-              children: [
-                if (carHire.drivers.isNotEmpty)
-                  _infoChip(Icons.person_rounded, carHire.drivers),
-                if (carHire.bookingReference.isNotEmpty)
-                  _infoChip(Icons.confirmation_number_outlined,
-                      carHire.bookingReference),
-                if (carHire.deposit > 0)
-                  _infoChip(Icons.account_balance_wallet_outlined,
-                      'Deposit: ${formatGBP(carHire.deposit)}'),
-                if (carHire.totalCost > 0)
-                  _infoChip(Icons.payments_outlined,
-                      'Total: ${formatGBP(carHire.totalCost)}'),
-              ],
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

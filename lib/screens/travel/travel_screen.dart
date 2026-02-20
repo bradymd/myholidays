@@ -61,9 +61,7 @@ class TravelScreen extends ConsumerWidget {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Delete Travel Leg?'),
-        content: Text(
-          'Remove ${leg.from} to ${leg.to}?',
-        ),
+        content: Text('Remove ${leg.from} to ${leg.to}?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
@@ -76,8 +74,10 @@ class TravelScreen extends ConsumerWidget {
                   .read(travelLegsProvider(holidayId).notifier)
                   .deleteTravelLeg(leg.id);
             },
-            child: const Text('Delete',
-                style: TextStyle(color: AppColors.danger)),
+            child: const Text(
+              'Delete',
+              style: TextStyle(color: AppColors.danger),
+            ),
           ),
         ],
       ),
@@ -129,131 +129,149 @@ class _TravelLegCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    const sectionColor = Color(0xFF1565C0);
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
+      clipBehavior: Clip.antiAlias,
       elevation: 2,
       shadowColor: AppColors.cardShadow,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Top row: type badge + mode icon + actions
-            Row(
-              children: [
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: _typeBadgeColor(leg.type).withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    _typeLabel(leg.type),
-                    style: AppTextStyles.caption.copyWith(
-                      color: _typeBadgeColor(leg.type),
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Icon(
-                  _modeIcon(leg.mode),
-                  size: 20,
-                  color: AppColors.textSecondary,
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  _modeLabel(leg.mode),
-                  style: AppTextStyles.caption,
-                ),
-                const Spacer(),
-                IconButton(
-                  icon: const Icon(Icons.edit_outlined, size: 20),
-                  color: AppColors.primary,
-                  onPressed: () =>
-                      context.push('/edit-travel/$holidayId/${leg.id}'),
-                  tooltip: 'Edit',
-                  visualDensity: VisualDensity.compact,
-                ),
-                IconButton(
-                  icon: const Icon(Icons.delete_outline_rounded, size: 20),
-                  color: AppColors.danger,
-                  onPressed: onDelete,
-                  tooltip: 'Delete',
-                  visualDensity: VisualDensity.compact,
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-
-            // From -> To
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    leg.from.isNotEmpty ? leg.from : 'Origin',
-                    style: AppTextStyles.bodyBold,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 8),
-                  child: Icon(Icons.arrow_forward_rounded,
-                      size: 18, color: AppColors.primary),
-                ),
-                Expanded(
-                  child: Text(
-                    leg.to.isNotEmpty ? leg.to : 'Destination',
-                    style: AppTextStyles.bodyBold,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-
-            // Departure date/time
-            if (leg.departureDate.isNotEmpty)
+      child: Ink(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Colors.white, sectionColor.withValues(alpha: 0.06)],
+            begin: Alignment.centerLeft,
+            end: Alignment.centerRight,
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Top row: type badge + mode icon + actions
               Row(
                 children: [
-                  const Icon(Icons.calendar_today_rounded,
-                      size: 14, color: AppColors.textMuted),
-                  const SizedBox(width: 6),
-                  Text(
-                    formatDateUK(leg.departureDate),
-                    style: AppTextStyles.caption,
-                  ),
-                  if (leg.departureTime.isNotEmpty) ...[
-                    const SizedBox(width: 12),
-                    const Icon(Icons.access_time_rounded,
-                        size: 14, color: AppColors.textMuted),
-                    const SizedBox(width: 4),
-                    Text(
-                      leg.departureTime,
-                      style: AppTextStyles.caption,
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
                     ),
-                  ],
+                    decoration: BoxDecoration(
+                      color: _typeBadgeColor(leg.type).withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      _typeLabel(leg.type),
+                      style: AppTextStyles.caption.copyWith(
+                        color: _typeBadgeColor(leg.type),
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Icon(
+                    _modeIcon(leg.mode),
+                    size: 20,
+                    color: AppColors.textSecondary,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(_modeLabel(leg.mode), style: AppTextStyles.caption),
+                  const Spacer(),
+                  IconButton(
+                    icon: const Icon(Icons.edit_outlined, size: 20),
+                    color: sectionColor,
+                    onPressed: () =>
+                        context.push('/edit-travel/$holidayId/${leg.id}'),
+                    tooltip: 'Edit',
+                    visualDensity: VisualDensity.compact,
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.delete_outline_rounded, size: 20),
+                    color: AppColors.danger,
+                    onPressed: onDelete,
+                    tooltip: 'Delete',
+                    visualDensity: VisualDensity.compact,
+                  ),
                 ],
               ),
-            const SizedBox(height: 8),
+              const SizedBox(height: 12),
 
-            // Carrier, booking ref, cost
-            Wrap(
-              spacing: 16,
-              runSpacing: 4,
-              children: [
-                if (leg.carrier.isNotEmpty)
-                  _infoChip(Icons.business_rounded, leg.carrier),
-                if (leg.bookingReference.isNotEmpty)
-                  _infoChip(Icons.confirmation_number_outlined,
-                      leg.bookingReference),
-                if (leg.cost > 0)
-                  _infoChip(Icons.payments_outlined, formatGBP(leg.cost)),
-              ],
-            ),
-          ],
+              // From -> To
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      leg.from.isNotEmpty ? leg.from : 'Origin',
+                      style: AppTextStyles.bodyBold,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 8),
+                    child: Icon(
+                      Icons.arrow_forward_rounded,
+                      size: 18,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                  Expanded(
+                    child: Text(
+                      leg.to.isNotEmpty ? leg.to : 'Destination',
+                      style: AppTextStyles.bodyBold,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+
+              // Departure date/time
+              if (leg.departureDate.isNotEmpty)
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.calendar_today_rounded,
+                      size: 14,
+                      color: AppColors.textMuted,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      formatDateUK(leg.departureDate),
+                      style: AppTextStyles.caption,
+                    ),
+                    if (leg.departureTime.isNotEmpty) ...[
+                      const SizedBox(width: 12),
+                      const Icon(
+                        Icons.access_time_rounded,
+                        size: 14,
+                        color: AppColors.textMuted,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(leg.departureTime, style: AppTextStyles.caption),
+                    ],
+                  ],
+                ),
+              const SizedBox(height: 8),
+
+              // Carrier, booking ref, cost
+              Wrap(
+                spacing: 16,
+                runSpacing: 4,
+                children: [
+                  if (leg.carrier.isNotEmpty)
+                    _infoChip(Icons.business_rounded, leg.carrier),
+                  if (leg.bookingReference.isNotEmpty)
+                    _infoChip(
+                      Icons.confirmation_number_outlined,
+                      leg.bookingReference,
+                    ),
+                  if (leg.cost > 0)
+                    _infoChip(Icons.payments_outlined, formatGBP(leg.cost)),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
