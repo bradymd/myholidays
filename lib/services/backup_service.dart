@@ -86,6 +86,15 @@ class BackupService {
       await dir.delete(recursive: true);
     }
 
+    // Delete WAL and SHM journal files so the old Drift connection
+    // cannot checkpoint stale data over the restored database.
+    for (final suffix in ['-wal', '-shm']) {
+      final journal = File(p.join(appDir.path, '$_dbFilename$suffix'));
+      if (await journal.exists()) {
+        await journal.delete();
+      }
+    }
+
     // Extract all files
     for (final entry in archive) {
       final outPath = p.join(appDir.path, entry.name);

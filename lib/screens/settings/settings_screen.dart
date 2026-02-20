@@ -136,12 +136,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
     setState(() => _isRestoring = true);
     try {
+      // Close the Drift database BEFORE restore so it cannot checkpoint
+      // stale WAL data over the restored database file.
+      await ref.read(databaseProvider).close();
+      ref.invalidate(databaseProvider);
+
       final success = await BackupService.restoreFromBackup(filePath);
 
       if (!mounted) return;
 
       if (success) {
-        // Close the old DB connection and reload all providers
+        // Reload all providers to pick up the restored data
         ref.invalidate(databaseProvider);
         ref.invalidate(holidaysProvider);
         ref.invalidate(documentsProvider);
@@ -154,6 +159,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           isSuccess: true,
         );
       } else {
+        // Re-open database on failure
+        ref.invalidate(databaseProvider);
+
         _showResultDialog(
           title: 'Restore Failed',
           message:
@@ -163,6 +171,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       }
     } catch (e) {
       if (!mounted) return;
+      // Re-open database on error
+      ref.invalidate(databaseProvider);
+
       _showResultDialog(
         title: 'Restore Failed',
         message: 'Error: $e',
@@ -214,6 +225,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
     setState(() => _isRestoring = true);
     try {
+      // Close the Drift database BEFORE restore so it cannot checkpoint
+      // stale WAL data over the restored database file.
+      await ref.read(databaseProvider).close();
+      ref.invalidate(databaseProvider);
+
       final success = await BackupService.restoreFromBackup(backupPath);
 
       if (!mounted) return;
@@ -230,6 +246,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           isSuccess: true,
         );
       } else {
+        ref.invalidate(databaseProvider);
+
         _showResultDialog(
           title: 'Restore Failed',
           message: 'The auto-backup file appears to be invalid.',
@@ -238,6 +256,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       }
     } catch (e) {
       if (!mounted) return;
+      ref.invalidate(databaseProvider);
+
       _showResultDialog(
         title: 'Restore Failed',
         message: 'Error: $e',
