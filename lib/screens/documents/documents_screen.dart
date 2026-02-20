@@ -31,6 +31,7 @@ class DocumentsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return AppScaffold(
+      useOverlayNav: true,
       showBackButton: true,
       title: _titleFromParentType(),
       body: SingleChildScrollView(

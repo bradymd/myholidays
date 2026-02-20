@@ -29,6 +29,8 @@ dependencies:
   archive: ^4.0.2
   share_plus: ^10.1.4
   open_file: ^3.5.11
+  printing: ^5.14.2
+  pdf: ^3.11.3
 
 dev_dependencies:
   flutter_test:

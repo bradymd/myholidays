@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:my_holidays/providers/alerts_provider.dart';
 import 'package:my_holidays/providers/holiday_provider.dart';
-import 'package:my_holidays/providers/database_provider.dart';
 import 'package:my_holidays/theme/app_colors.dart';
 import 'package:my_holidays/theme/app_text_styles.dart';
 import 'package:my_holidays/utils/date_helpers.dart';
@@ -20,31 +19,11 @@ class HomeScreen extends ConsumerStatefulWidget {
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   String _searchQuery = '';
-  Map<String, int> _travelerCounts = {};
-
-  @override
-  void initState() {
-    super.initState();
-    _loadTravelerCounts();
-  }
-
-  Future<void> _loadTravelerCounts() async {
-    final holidays = await ref.read(holidaysProvider.future);
-    final db = ref.read(databaseProvider);
-    final counts = <String, int>{};
-    for (final h in holidays) {
-      final travelers = await db.getTravelers(h.id);
-      counts[h.id] = travelers.length;
-    }
-    if (mounted) setState(() => _travelerCounts = counts);
-  }
 
   @override
   Widget build(BuildContext context) {
     final holidaysAsync = ref.watch(holidaysProvider);
     final alertsAsync = ref.watch(alertsProvider);
-
-    ref.listen(holidaysProvider, (prev, next) => _loadTravelerCounts());
 
     return AppScaffold(
       title: 'My Holidays',
@@ -159,7 +138,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         padding: const EdgeInsets.only(bottom: 16),
                         child: HolidayCard(
                           holiday: h,
-                          travelerCount: _travelerCounts[h.id] ?? 0,
                           onTap: () => context.push('/holiday/${h.id}'),
                         ),
                       )),

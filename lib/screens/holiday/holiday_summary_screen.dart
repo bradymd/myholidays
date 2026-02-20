@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
 import 'package:share_plus/share_plus.dart';
 
 import 'package:my_holidays/models/accommodation.dart';
@@ -33,8 +37,7 @@ class HolidaySummaryScreen extends ConsumerStatefulWidget {
 }
 
 class _HolidaySummaryScreenState extends ConsumerState<HolidaySummaryScreen> {
-  bool _loading = true;
-
+  // Reactive data from providers — populated in build()
   HolidayPlan? _holiday;
   List<Traveler> _travelers = [];
   List<Accommodation> _accommodations = [];
@@ -42,45 +45,6 @@ class _HolidaySummaryScreenState extends ConsumerState<HolidaySummaryScreen> {
   List<CarHire> _carHires = [];
   List<Activity> _activities = [];
   List<ItineraryDay> _itineraryDays = [];
-
-  @override
-  void initState() {
-    super.initState();
-    _loadAll();
-  }
-
-  Future<void> _loadAll() async {
-    final holidays = await ref.read(holidaysProvider.future);
-    final holiday =
-        holidays.where((h) => h.id == widget.holidayId).firstOrNull;
-
-    final travelers =
-        await ref.read(travelersProvider(widget.holidayId).future);
-    final accommodations =
-        await ref.read(accommodationsProvider(widget.holidayId).future);
-    final travelLegs =
-        await ref.read(travelLegsProvider(widget.holidayId).future);
-    final carHires =
-        await ref.read(carHiresProvider(widget.holidayId).future);
-    final activities =
-        await ref.read(activitiesProvider(widget.holidayId).future);
-    final itineraryDays =
-        await ref.read(itineraryDaysProvider(widget.holidayId).future);
-
-    if (mounted) {
-      setState(() {
-        _holiday = holiday;
-        _travelers = travelers;
-        _accommodations = accommodations;
-        _travelLegs = travelLegs;
-        _carHires = carHires;
-        _activities = activities;
-        _itineraryDays = List<ItineraryDay>.from(itineraryDays)
-          ..sort((a, b) => a.dayNumber.compareTo(b.dayNumber));
-        _loading = false;
-      });
-    }
-  }
 
   // --- Build the plain-text summary ---
 
@@ -106,9 +70,10 @@ class _HolidaySummaryScreenState extends ConsumerState<HolidaySummaryScreen> {
       buf.writeln('TRAVELLERS');
       buf.writeln('-'.padRight(30, '-'));
       for (final t in _travelers) {
-        buf.writeln('  - ${t.name}');
+        buf.writeln('  ${t.name}');
+        if (t.notes.isNotEmpty) buf.writeln('  Notes: ${t.notes}');
+        buf.writeln();
       }
-      buf.writeln();
     }
 
     // Accommodation
@@ -126,6 +91,19 @@ class _HolidaySummaryScreenState extends ConsumerState<HolidaySummaryScreen> {
           buf.writeln('  Confirmation: ${a.confirmationNumber}');
         }
         if (a.cost > 0) buf.writeln('  Cost: ${formatGBP(a.cost)}');
+        if (a.depositPaid > 0) {
+          buf.writeln('  Deposit Paid: ${formatGBP(a.depositPaid)}');
+        }
+        if (a.balanceDue > 0) {
+          buf.writeln('  Balance Due: ${formatGBP(a.balanceDue)}');
+        }
+        if (a.balanceDueDate.isNotEmpty) {
+          buf.writeln('  Due Date: ${formatDateUK(a.balanceDueDate)}');
+        }
+        if (a.balancePaidDate.isNotEmpty) {
+          buf.writeln('  Paid Date: ${formatDateUK(a.balancePaidDate)}');
+        }
+        if (a.notes.isNotEmpty) buf.writeln('  Notes: ${a.notes}');
         buf.writeln();
       }
     }
@@ -163,6 +141,7 @@ class _HolidaySummaryScreenState extends ConsumerState<HolidaySummaryScreen> {
           buf.writeln('  Booking Ref: ${leg.bookingReference}');
         }
         if (leg.cost > 0) buf.writeln('  Cost: ${formatGBP(leg.cost)}');
+        if (leg.notes.isNotEmpty) buf.writeln('  Notes: ${leg.notes}');
         buf.writeln();
       }
     }
@@ -189,12 +168,15 @@ class _HolidaySummaryScreenState extends ConsumerState<HolidaySummaryScreen> {
           if (c.dropoffTime.isNotEmpty) buf.write(' at ${c.dropoffTime}');
           buf.writeln();
         }
+        if (c.drivers.isNotEmpty) buf.writeln('  Drivers: ${c.drivers}');
         if (c.bookingReference.isNotEmpty) {
           buf.writeln('  Booking Ref: ${c.bookingReference}');
         }
+        if (c.deposit > 0) buf.writeln('  Deposit: ${formatGBP(c.deposit)}');
         if (c.totalCost > 0) {
-          buf.writeln('  Cost: ${formatGBP(c.totalCost)}');
+          buf.writeln('  Total Cost: ${formatGBP(c.totalCost)}');
         }
+        if (c.notes.isNotEmpty) buf.writeln('  Notes: ${c.notes}');
         buf.writeln();
       }
     }
@@ -215,6 +197,7 @@ class _HolidaySummaryScreenState extends ConsumerState<HolidaySummaryScreen> {
           buf.writeln('  Booking Ref: ${a.bookingReference}');
         }
         if (a.cost > 0) buf.writeln('  Cost: ${formatGBP(a.cost)}');
+        if (a.notes.isNotEmpty) buf.writeln('  Notes: ${a.notes}');
         buf.writeln();
       }
     }
@@ -231,6 +214,9 @@ class _HolidaySummaryScreenState extends ConsumerState<HolidaySummaryScreen> {
         }
         if (day.description.isNotEmpty) {
           buf.writeln('  ${day.description}');
+        }
+        if (day.notes.isNotEmpty) {
+          buf.writeln('  Notes: ${day.notes}');
         }
         buf.writeln();
       }
@@ -284,47 +270,474 @@ class _HolidaySummaryScreenState extends ConsumerState<HolidaySummaryScreen> {
     Share.share(text);
   }
 
+  void _printSummary() {
+    final h = _holiday;
+    if (h == null) return;
+
+    Printing.layoutPdf(
+      name: h.name,
+      onLayout: (PdfPageFormat format) async {
+        final pdf = pw.Document();
+
+        // Styles
+        const purple = PdfColors.purple;
+        final titleStyle = pw.TextStyle(
+          fontSize: 24,
+          fontWeight: pw.FontWeight.bold,
+          color: purple,
+        );
+        final subtitleStyle = pw.TextStyle(
+          fontSize: 12,
+          color: PdfColors.grey700,
+        );
+        final sectionHeaderStyle = pw.TextStyle(
+          fontSize: 16,
+          fontWeight: pw.FontWeight.bold,
+          color: purple,
+        );
+        final labelStyle = pw.TextStyle(
+          fontSize: 10,
+          fontWeight: pw.FontWeight.bold,
+          color: PdfColors.grey800,
+        );
+        const valueStyle = pw.TextStyle(fontSize: 10);
+        final notesStyle = pw.TextStyle(
+          fontSize: 10,
+          fontStyle: pw.FontStyle.italic,
+          color: PdfColors.grey600,
+        );
+
+        // Helper to build a label: value row
+        pw.Widget pdfRow(String label, String value) {
+          if (value.isEmpty) return pw.SizedBox.shrink();
+          return pw.Padding(
+            padding: const pw.EdgeInsets.symmetric(vertical: 1.5),
+            child: pw.Row(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                pw.SizedBox(
+                  width: 100,
+                  child: pw.Text('$label:', style: labelStyle),
+                ),
+                pw.Expanded(
+                  child: pw.Text(value, style: valueStyle),
+                ),
+              ],
+            ),
+          );
+        }
+
+        // Helper for a card-like container
+        pw.Widget pdfCard(List<pw.Widget> children) {
+          return pw.Container(
+            margin: const pw.EdgeInsets.only(bottom: 6),
+            padding: const pw.EdgeInsets.all(10),
+            decoration: pw.BoxDecoration(
+              border: pw.Border.all(color: PdfColors.grey300),
+              borderRadius: pw.BorderRadius.circular(6),
+            ),
+            child: pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: children,
+            ),
+          );
+        }
+
+        // Helper for a section header
+        pw.Widget pdfSectionHeader(String title) {
+          return pw.Padding(
+            padding: const pw.EdgeInsets.only(top: 14, bottom: 6),
+            child: pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                pw.Text(title, style: sectionHeaderStyle),
+                pw.Divider(color: purple, thickness: 1),
+              ],
+            ),
+          );
+        }
+
+        // Build all content widgets
+        final content = <pw.Widget>[];
+
+        // Title header
+        content.add(
+          pw.Container(
+            width: double.infinity,
+            padding: const pw.EdgeInsets.all(16),
+            decoration: pw.BoxDecoration(
+              color: PdfColors.purple50,
+              borderRadius: pw.BorderRadius.circular(8),
+            ),
+            child: pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                pw.Text(h.name, style: titleStyle),
+                if (h.startDate.isNotEmpty || h.endDate.isNotEmpty) ...[
+                  pw.SizedBox(height: 6),
+                  pw.Text(
+                    '${formatDateUK(h.startDate)} - ${formatDateUK(h.endDate)}',
+                    style: subtitleStyle,
+                  ),
+                ],
+                if (h.notes.isNotEmpty) ...[
+                  pw.SizedBox(height: 8),
+                  pw.Text(h.notes, style: notesStyle),
+                ],
+              ],
+            ),
+          ),
+        );
+
+        // Travellers
+        if (_travelers.isNotEmpty) {
+          content.add(pdfSectionHeader('Travellers'));
+          for (final t in _travelers) {
+            content.add(pdfCard([
+              pdfRow('Name', t.name),
+              if (t.notes.isNotEmpty) pdfRow('Notes', t.notes),
+            ]));
+          }
+        }
+
+        // Accommodation
+        if (_accommodations.isNotEmpty) {
+          content.add(pdfSectionHeader('Accommodation'));
+          for (final a in _accommodations) {
+            content.add(pdfCard([
+              pdfRow('Name', a.name),
+              if (a.address.isNotEmpty) pdfRow('Address', a.address),
+              if (a.checkIn.isNotEmpty || a.checkOut.isNotEmpty)
+                pdfRow('Dates',
+                    '${formatDateUK(a.checkIn)} - ${formatDateUK(a.checkOut)}'),
+              if (a.confirmationNumber.isNotEmpty)
+                pdfRow('Confirmation', a.confirmationNumber),
+              if (a.cost > 0) pdfRow('Cost', formatGBP(a.cost)),
+              if (a.depositPaid > 0)
+                pdfRow('Deposit Paid', formatGBP(a.depositPaid)),
+              if (a.balanceDue > 0)
+                pdfRow('Balance Due', formatGBP(a.balanceDue)),
+              if (a.balanceDueDate.isNotEmpty)
+                pdfRow('Due Date', formatDateUK(a.balanceDueDate)),
+              if (a.balancePaidDate.isNotEmpty)
+                pdfRow('Paid Date', formatDateUK(a.balancePaidDate)),
+              if (a.notes.isNotEmpty) pdfRow('Notes', a.notes),
+            ]));
+          }
+        }
+
+        // Travel
+        if (_travelLegs.isNotEmpty) {
+          content.add(pdfSectionHeader('Travel'));
+          for (final leg in _travelLegs) {
+            final typeLabel = leg.type.isNotEmpty
+                ? '${leg.type[0].toUpperCase()}${leg.type.substring(1)}'
+                : '';
+            final modeLabel = leg.mode.isNotEmpty
+                ? '${leg.mode[0].toUpperCase()}${leg.mode.substring(1)}'
+                : '';
+            content.add(pdfCard([
+              pdfRow('Type',
+                  '$typeLabel${modeLabel.isNotEmpty ? ' ($modeLabel)' : ''}'),
+              if (leg.from.isNotEmpty || leg.to.isNotEmpty)
+                pdfRow('Route', '${leg.from} -> ${leg.to}'),
+              if (leg.departureDate.isNotEmpty)
+                pdfRow('Depart',
+                    '${formatDateUK(leg.departureDate)}${leg.departureTime.isNotEmpty ? ' ${leg.departureTime}' : ''}'),
+              if (leg.arrivalDate.isNotEmpty)
+                pdfRow('Arrive',
+                    '${formatDateUK(leg.arrivalDate)}${leg.arrivalTime.isNotEmpty ? ' ${leg.arrivalTime}' : ''}'),
+              if (leg.carrier.isNotEmpty) pdfRow('Carrier', leg.carrier),
+              if (leg.bookingReference.isNotEmpty)
+                pdfRow('Booking Ref', leg.bookingReference),
+              if (leg.cost > 0) pdfRow('Cost', formatGBP(leg.cost)),
+              if (leg.notes.isNotEmpty) pdfRow('Notes', leg.notes),
+            ]));
+          }
+        }
+
+        // Car Hire
+        if (_carHires.isNotEmpty) {
+          content.add(pdfSectionHeader('Car Hire'));
+          for (final c in _carHires) {
+            content.add(pdfCard([
+              if (c.company.isNotEmpty) pdfRow('Company', c.company),
+              if (c.pickupLocation.isNotEmpty || c.pickupDate.isNotEmpty)
+                pdfRow('Pickup',
+                    '${c.pickupLocation}${c.pickupDate.isNotEmpty ? ' on ${formatDateUK(c.pickupDate)}' : ''}${c.pickupTime.isNotEmpty ? ' at ${c.pickupTime}' : ''}'),
+              if (c.dropoffLocation.isNotEmpty || c.dropoffDate.isNotEmpty)
+                pdfRow('Dropoff',
+                    '${c.dropoffLocation}${c.dropoffDate.isNotEmpty ? ' on ${formatDateUK(c.dropoffDate)}' : ''}${c.dropoffTime.isNotEmpty ? ' at ${c.dropoffTime}' : ''}'),
+              if (c.drivers.isNotEmpty) pdfRow('Drivers', c.drivers),
+              if (c.bookingReference.isNotEmpty)
+                pdfRow('Booking Ref', c.bookingReference),
+              if (c.deposit > 0) pdfRow('Deposit', formatGBP(c.deposit)),
+              if (c.totalCost > 0) pdfRow('Total Cost', formatGBP(c.totalCost)),
+              if (c.notes.isNotEmpty) pdfRow('Notes', c.notes),
+            ]));
+          }
+        }
+
+        // Activities
+        if (_activities.isNotEmpty) {
+          content.add(pdfSectionHeader('Activities'));
+          for (final a in _activities) {
+            content.add(pdfCard([
+              pdfRow('Name', a.name),
+              if (a.date.isNotEmpty)
+                pdfRow('Date',
+                    '${formatDateUK(a.date)}${a.time.isNotEmpty ? ' at ${a.time}' : ''}'),
+              if (a.location.isNotEmpty) pdfRow('Location', a.location),
+              if (a.bookingReference.isNotEmpty)
+                pdfRow('Booking Ref', a.bookingReference),
+              if (a.cost > 0) pdfRow('Cost', formatGBP(a.cost)),
+              if (a.notes.isNotEmpty) pdfRow('Notes', a.notes),
+            ]));
+          }
+        }
+
+        // Itinerary
+        if (_itineraryDays.isNotEmpty) {
+          content.add(pdfSectionHeader('Itinerary'));
+          for (final day in _itineraryDays) {
+            content.add(pdfCard([
+              pdfRow('Day',
+                  '${day.dayNumber}${day.title.isNotEmpty ? ' - ${day.title}' : ''}'),
+              if (day.date.isNotEmpty) pdfRow('Date', formatDateUK(day.date)),
+              if (day.description.isNotEmpty)
+                pdfRow('Description', day.description),
+              if (day.notes.isNotEmpty) pdfRow('Notes', day.notes),
+            ]));
+          }
+        }
+
+        // Financial Summary
+        final costs = <String, double>{};
+        double accomTotal = 0;
+        for (final a in _accommodations) {
+          accomTotal += a.cost;
+        }
+        if (accomTotal > 0) costs['Accommodation'] = accomTotal;
+
+        double travelTotal = 0;
+        for (final l in _travelLegs) {
+          travelTotal += l.cost;
+        }
+        if (travelTotal > 0) costs['Travel'] = travelTotal;
+
+        double carTotal = 0;
+        for (final c in _carHires) {
+          carTotal += c.totalCost;
+        }
+        if (carTotal > 0) costs['Car Hire'] = carTotal;
+
+        double activityTotal = 0;
+        for (final a in _activities) {
+          activityTotal += a.cost;
+        }
+        if (activityTotal > 0) costs['Activities'] = activityTotal;
+
+        if (costs.isNotEmpty) {
+          double grandTotal = 0;
+          for (final v in costs.values) {
+            grandTotal += v;
+          }
+
+          content.add(pdfSectionHeader('Financial Summary'));
+          content.add(
+            pw.Container(
+              padding: const pw.EdgeInsets.all(12),
+              decoration: pw.BoxDecoration(
+                border: pw.Border.all(color: PdfColors.grey300),
+                borderRadius: pw.BorderRadius.circular(6),
+              ),
+              child: pw.Column(
+                children: [
+                  ...costs.entries.map((entry) => pw.Padding(
+                        padding: const pw.EdgeInsets.symmetric(vertical: 2),
+                        child: pw.Row(
+                          mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                          children: [
+                            pw.Text(entry.key, style: valueStyle),
+                            pw.Text(formatGBP(entry.value),
+                                style: pw.TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: pw.FontWeight.bold)),
+                          ],
+                        ),
+                      )),
+                  pw.Divider(color: PdfColors.grey400),
+                  pw.Padding(
+                    padding: const pw.EdgeInsets.only(top: 4),
+                    child: pw.Row(
+                      mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                      children: [
+                        pw.Text('TOTAL',
+                            style: pw.TextStyle(
+                                fontSize: 13,
+                                fontWeight: pw.FontWeight.bold,
+                                color: purple)),
+                        pw.Text(formatGBP(grandTotal),
+                            style: pw.TextStyle(
+                                fontSize: 13,
+                                fontWeight: pw.FontWeight.bold,
+                                color: purple)),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        // Build PDF pages with multi-page support
+        pdf.addPage(
+          pw.MultiPage(
+            pageFormat: format,
+            margin: const pw.EdgeInsets.all(32),
+            build: (context) => content,
+          ),
+        );
+
+        return pdf.save();
+      },
+    );
+  }
+
   // --- UI ---
 
   @override
   Widget build(BuildContext context) {
-    return AppScaffold(
-      showBackButton: true,
-      title: 'Trip Summary',
-      actions: [
-        if (!_loading)
-          IconButton(
-            icon: const Icon(Icons.share_rounded, color: Colors.white),
-            onPressed: _shareSummary,
-            tooltip: 'Share Summary',
-          ),
-      ],
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : _holiday == null
+    final hId = widget.holidayId;
+    final holidaysAsync = ref.watch(holidaysProvider);
+
+    // Watch all sub-entity providers for reactive updates
+    _travelers = ref.watch(travelersProvider(hId)).valueOrNull ?? [];
+    _accommodations = ref.watch(accommodationsProvider(hId)).valueOrNull ?? [];
+    _travelLegs = ref.watch(travelLegsProvider(hId)).valueOrNull ?? [];
+    _carHires = ref.watch(carHiresProvider(hId)).valueOrNull ?? [];
+    _activities = ref.watch(activitiesProvider(hId)).valueOrNull ?? [];
+    final rawDays = ref.watch(itineraryDaysProvider(hId)).valueOrNull ?? [];
+    _itineraryDays = List<ItineraryDay>.from(rawDays)
+      ..sort((a, b) => a.dayNumber.compareTo(b.dayNumber));
+
+    return holidaysAsync.when(
+      loading: () => const AppScaffold(
+        title: 'Trip Summary',
+        body: Center(child: CircularProgressIndicator()),
+      ),
+      error: (e, _) => AppScaffold(
+        title: 'Trip Summary',
+        body: Center(child: Text('Error: $e')),
+      ),
+      data: (holidays) {
+        _holiday = holidays.where((h) => h.id == hId).firstOrNull;
+
+        return AppScaffold(
+          useOverlayNav: true,
+          showBackButton: true,
+          title: 'Trip Summary',
+          actions: [
+            if (_holiday != null) ...[
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  color: AppColors.primaryLight.withValues(alpha: 0.7),
+                  shape: BoxShape.circle,
+                  boxShadow: const [
+                    BoxShadow(
+                        color: Colors.black12,
+                        blurRadius: 4,
+                        offset: Offset(0, 2)),
+                  ],
+                ),
+                child: IconButton(
+                  icon: const Icon(Icons.print_rounded,
+                      color: Colors.white, size: 20),
+                  onPressed: _printSummary,
+                  tooltip: 'Print / Save PDF',
+                  padding: const EdgeInsets.all(8),
+                  constraints: const BoxConstraints(),
+                ),
+              ),
+              const SizedBox(width: 8),
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  color: AppColors.primaryLight.withValues(alpha: 0.7),
+                  shape: BoxShape.circle,
+                  boxShadow: const [
+                    BoxShadow(
+                        color: Colors.black12,
+                        blurRadius: 4,
+                        offset: Offset(0, 2)),
+                  ],
+                ),
+                child: IconButton(
+                  icon: const Icon(Icons.share_rounded,
+                      color: Colors.white, size: 20),
+                  onPressed: _shareSummary,
+                  tooltip: 'Share Summary',
+                  padding: const EdgeInsets.all(8),
+                  constraints: const BoxConstraints(),
+                ),
+              ),
+            ],
+          ],
+          body: _holiday == null
               ? Center(
                   child: Text('Holiday not found.',
                       style: AppTextStyles.body
                           .copyWith(color: AppColors.textSecondary)),
                 )
-              : SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 40),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildHeader(),
-                      if (_travelers.isNotEmpty) _buildTravellersSection(),
-                      if (_accommodations.isNotEmpty)
-                        _buildAccommodationSection(),
-                      if (_travelLegs.isNotEmpty) _buildTravelSection(),
-                      if (_carHires.isNotEmpty) _buildCarHireSection(),
-                      if (_activities.isNotEmpty) _buildActivitiesSection(),
-                      if (_itineraryDays.isNotEmpty)
-                        _buildItinerarySection(),
-                      _buildFinancialSection(),
-                    ],
-                  ),
+              : Stack(
+                  children: [
+                    SingleChildScrollView(
+                      padding: const EdgeInsets.fromLTRB(20, 20, 20, 80),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildHeader(),
+                          if (_travelers.isNotEmpty) _buildTravellersSection(),
+                          if (_accommodations.isNotEmpty)
+                            _buildAccommodationSection(),
+                          if (_travelLegs.isNotEmpty) _buildTravelSection(),
+                          if (_carHires.isNotEmpty) _buildCarHireSection(),
+                          if (_activities.isNotEmpty) _buildActivitiesSection(),
+                          if (_itineraryDays.isNotEmpty)
+                            _buildItinerarySection(),
+                          _buildFinancialSection(),
+                        ],
+                      ),
+                    ),
+                    Positioned(
+                      right: 16,
+                      bottom: 16,
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          color: AppColors.primaryLight.withValues(alpha: 0.7),
+                          shape: BoxShape.circle,
+                          boxShadow: const [
+                            BoxShadow(
+                                color: Colors.black12,
+                                blurRadius: 4,
+                                offset: Offset(0, 2)),
+                          ],
+                        ),
+                        child: IconButton(
+                          onPressed: () => context
+                              .push('/holiday-manage/${widget.holidayId}'),
+                          tooltip: 'Edit',
+                          icon: const Icon(Icons.edit_rounded,
+                              color: Colors.white, size: 22),
+                          padding: const EdgeInsets.all(10),
+                          constraints: const BoxConstraints(),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
+        );
+      },
     );
   }
 
@@ -365,6 +778,14 @@ class _HolidaySummaryScreenState extends ConsumerState<HolidaySummaryScreen> {
                 ],
               ),
             ],
+            if (h.notes.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              Text(
+                h.notes,
+                style: AppTextStyles.body
+                    .copyWith(color: AppColors.textSecondary),
+              ),
+            ],
           ],
         ),
       ),
@@ -389,29 +810,13 @@ class _HolidaySummaryScreenState extends ConsumerState<HolidaySummaryScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildSectionTitle('Travellers', Icons.people_rounded),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: _travelers
-              .map((t) => Chip(
-                    avatar: CircleAvatar(
-                      backgroundColor: AppColors.primaryLight,
-                      child: Text(
-                        t.name.isNotEmpty ? t.name[0].toUpperCase() : '?',
-                        style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700),
-                      ),
-                    ),
-                    label: Text(t.name, style: AppTextStyles.body),
-                    backgroundColor: AppColors.softLilac,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20)),
-                    side: BorderSide.none,
-                  ))
-              .toList(),
-        ),
+        ..._travelers.map((t) => _SummaryCard(
+              children: [
+                _SummaryRow(label: 'Name', value: t.name),
+                if (t.notes.isNotEmpty)
+                  _SummaryRow(label: 'Notes', value: t.notes),
+              ],
+            )),
       ],
     );
   }
@@ -437,6 +842,22 @@ class _HolidaySummaryScreenState extends ConsumerState<HolidaySummaryScreen> {
                       label: 'Confirmation', value: a.confirmationNumber),
                 if (a.cost > 0)
                   _SummaryRow(label: 'Cost', value: formatGBP(a.cost)),
+                if (a.depositPaid > 0)
+                  _SummaryRow(
+                      label: 'Deposit Paid', value: formatGBP(a.depositPaid)),
+                if (a.balanceDue > 0)
+                  _SummaryRow(
+                      label: 'Balance Due', value: formatGBP(a.balanceDue)),
+                if (a.balanceDueDate.isNotEmpty)
+                  _SummaryRow(
+                      label: 'Due Date',
+                      value: formatDateUK(a.balanceDueDate)),
+                if (a.balancePaidDate.isNotEmpty)
+                  _SummaryRow(
+                      label: 'Paid Date',
+                      value: formatDateUK(a.balancePaidDate)),
+                if (a.notes.isNotEmpty)
+                  _SummaryRow(label: 'Notes', value: a.notes),
               ],
             )),
       ],
@@ -484,6 +905,8 @@ class _HolidaySummaryScreenState extends ConsumerState<HolidaySummaryScreen> {
                     label: 'Booking Ref', value: leg.bookingReference),
               if (leg.cost > 0)
                 _SummaryRow(label: 'Cost', value: formatGBP(leg.cost)),
+              if (leg.notes.isNotEmpty)
+                _SummaryRow(label: 'Notes', value: leg.notes),
             ],
           );
         }),
@@ -512,12 +935,19 @@ class _HolidaySummaryScreenState extends ConsumerState<HolidaySummaryScreen> {
                     value:
                         '${c.dropoffLocation}${c.dropoffDate.isNotEmpty ? ' on ${formatDateUK(c.dropoffDate)}' : ''}${c.dropoffTime.isNotEmpty ? ' at ${c.dropoffTime}' : ''}',
                   ),
+                if (c.drivers.isNotEmpty)
+                  _SummaryRow(label: 'Drivers', value: c.drivers),
                 if (c.bookingReference.isNotEmpty)
                   _SummaryRow(
                       label: 'Booking Ref', value: c.bookingReference),
+                if (c.deposit > 0)
+                  _SummaryRow(
+                      label: 'Deposit', value: formatGBP(c.deposit)),
                 if (c.totalCost > 0)
                   _SummaryRow(
-                      label: 'Cost', value: formatGBP(c.totalCost)),
+                      label: 'Total Cost', value: formatGBP(c.totalCost)),
+                if (c.notes.isNotEmpty)
+                  _SummaryRow(label: 'Notes', value: c.notes),
               ],
             )),
       ],
@@ -545,6 +975,8 @@ class _HolidaySummaryScreenState extends ConsumerState<HolidaySummaryScreen> {
                       label: 'Booking Ref', value: a.bookingReference),
                 if (a.cost > 0)
                   _SummaryRow(label: 'Cost', value: formatGBP(a.cost)),
+                if (a.notes.isNotEmpty)
+                  _SummaryRow(label: 'Notes', value: a.notes),
               ],
             )),
       ],
@@ -607,6 +1039,16 @@ class _HolidaySummaryScreenState extends ConsumerState<HolidaySummaryScreen> {
                         child: Text(day.description,
                             style: AppTextStyles.body.copyWith(
                                 color: AppColors.textSecondary)),
+                      ),
+                    ],
+                    if (day.notes.isNotEmpty) ...[
+                      const SizedBox(height: 6),
+                      Padding(
+                        padding: const EdgeInsets.only(left: 42),
+                        child: Text(day.notes,
+                            style: AppTextStyles.caption.copyWith(
+                                color: AppColors.textMuted,
+                                fontStyle: FontStyle.italic)),
                       ),
                     ],
                   ],

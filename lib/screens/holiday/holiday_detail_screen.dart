@@ -5,11 +5,15 @@ import 'package:my_holidays/models/accommodation.dart';
 import 'package:my_holidays/models/activity.dart';
 import 'package:my_holidays/models/car_hire.dart';
 import 'package:my_holidays/models/document_ref.dart';
-import 'package:my_holidays/models/itinerary_day.dart';
 import 'package:my_holidays/models/travel_leg.dart';
-import 'package:my_holidays/models/traveler.dart';
+import 'package:my_holidays/providers/accommodation_provider.dart';
+import 'package:my_holidays/providers/activity_provider.dart';
+import 'package:my_holidays/providers/car_hire_provider.dart';
 import 'package:my_holidays/providers/database_provider.dart';
 import 'package:my_holidays/providers/holiday_provider.dart';
+import 'package:my_holidays/providers/itinerary_provider.dart';
+import 'package:my_holidays/providers/travel_provider.dart';
+import 'package:my_holidays/providers/traveler_provider.dart';
 import 'package:my_holidays/theme/app_colors.dart';
 import 'package:my_holidays/theme/app_text_styles.dart';
 import 'package:my_holidays/utils/currency_helpers.dart';
@@ -27,61 +31,83 @@ class HolidayDetailScreen extends ConsumerStatefulWidget {
 }
 
 class _HolidayDetailScreenState extends ConsumerState<HolidayDetailScreen> {
-  List<Traveler> _travelers = [];
-  List<Accommodation> _accommodations = [];
-  List<TravelLeg> _travelLegs = [];
-  List<CarHire> _carHires = [];
-  List<Activity> _activities = [];
-  List<ItineraryDay> _itineraryDays = [];
   List<DocumentRef> _documents = [];
-  bool _loaded = false;
+
+  static const _allSections = [
+    'travelers',
+    'accommodation',
+    'travel',
+    'car_hire',
+    'activities',
+    'itinerary',
+    'documents',
+  ];
+
+  Set<String> _enabledSections = _allSections.toSet();
+  bool _sectionsLoaded = false;
 
   @override
   void initState() {
     super.initState();
-    _loadSubEntities();
+    _loadDocuments();
+    _loadSectionPrefs();
   }
 
-  Future<void> _loadSubEntities() async {
+  Future<void> _loadSectionPrefs() async {
     final db = ref.read(databaseProvider);
-    final hId = widget.holidayId;
-
-    final results = await Future.wait([
-      db.getTravelers(hId),
-      db.getAccommodations(hId),
-      db.getTravelLegs(hId),
-      db.getCarHires(hId),
-      db.getActivities(hId),
-      db.getItineraryDays(hId),
-      db.getDocuments(parentType: 'holiday', parentId: hId),
-    ]);
-
+    final value =
+        await db.getSetting('holiday_sections_${widget.holidayId}');
     if (mounted) {
       setState(() {
-        _travelers = results[0] as List<Traveler>;
-        _accommodations = results[1] as List<Accommodation>;
-        _travelLegs = results[2] as List<TravelLeg>;
-        _carHires = results[3] as List<CarHire>;
-        _activities = results[4] as List<Activity>;
-        _itineraryDays = results[5] as List<ItineraryDay>;
-        _documents = results[6] as List<DocumentRef>;
-        _loaded = true;
+        if (value != null && value.isNotEmpty) {
+          _enabledSections = value.split(',').toSet();
+        }
+        _sectionsLoaded = true;
       });
     }
   }
 
-  double get _totalCost {
+  Future<void> _toggleSection(String key) async {
+    final updated = Set<String>.from(_enabledSections);
+    if (updated.contains(key)) {
+      updated.remove(key);
+    } else {
+      updated.add(key);
+    }
+    setState(() => _enabledSections = updated);
+    final db = ref.read(databaseProvider);
+    await db.setSetting(
+        'holiday_sections_${widget.holidayId}', updated.join(','));
+  }
+
+  Future<void> _loadDocuments() async {
+    final db = ref.read(databaseProvider);
+    final docs =
+        await db.getDocuments(parentType: 'holiday', parentId: widget.holidayId);
+    if (mounted) {
+      setState(() {
+        _documents = docs;
+      });
+    }
+  }
+
+  double _totalCost(
+    List<Accommodation> accommodations,
+    List<TravelLeg> travelLegs,
+    List<CarHire> carHires,
+    List<Activity> activities,
+  ) {
     double total = 0;
-    for (final a in _accommodations) {
+    for (final a in accommodations) {
       total += a.cost;
     }
-    for (final t in _travelLegs) {
+    for (final t in travelLegs) {
       total += t.cost;
     }
-    for (final c in _carHires) {
+    for (final c in carHires) {
       total += c.totalCost;
     }
-    for (final a in _activities) {
+    for (final a in activities) {
       total += a.cost;
     }
     return total;
@@ -117,12 +143,75 @@ class _HolidayDetailScreenState extends ConsumerState<HolidayDetailScreen> {
     );
   }
 
+  Widget _sectionChip(String key, String label, IconData icon) {
+    final enabled = _enabledSections.contains(key);
+    return FilterChip(
+      label: Text(
+        label,
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+          color: enabled ? Colors.white : AppColors.textMuted,
+        ),
+      ),
+      avatar: Icon(icon, size: 14,
+          color: enabled ? Colors.white : AppColors.textMuted),
+      selected: enabled,
+      onSelected: (_) => _toggleSection(key),
+      selectedColor: AppColors.primaryLight,
+      backgroundColor: AppColors.softLilac,
+      showCheckmark: false,
+      visualDensity: VisualDensity.compact,
+      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      side: BorderSide.none,
+    );
+  }
+
+  Widget _buildActionButton({
+    required IconData icon,
+    required String tooltip,
+    required VoidCallback onPressed,
+  }) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: AppColors.primaryLight.withValues(alpha: 0.7),
+        shape: BoxShape.circle,
+        boxShadow: const [
+          BoxShadow(
+              color: Colors.black12, blurRadius: 4, offset: Offset(0, 2)),
+        ],
+      ),
+      child: IconButton(
+        onPressed: onPressed,
+        tooltip: tooltip,
+        icon: Icon(icon, color: Colors.white, size: 20),
+        padding: const EdgeInsets.all(8),
+        constraints: const BoxConstraints(),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final holidaysAsync = ref.watch(holidaysProvider);
+    final hId = widget.holidayId;
 
-    // Reload sub-entity counts when holiday provider changes
-    ref.listen(holidaysProvider, (prev, next) => _loadSubEntities());
+    // Watch all sub-entity providers so counts update automatically
+    final travelers = ref.watch(travelersProvider(hId)).valueOrNull ?? [];
+    final accommodations =
+        ref.watch(accommodationsProvider(hId)).valueOrNull ?? [];
+    final travelLegs = ref.watch(travelLegsProvider(hId)).valueOrNull ?? [];
+    final carHires = ref.watch(carHiresProvider(hId)).valueOrNull ?? [];
+    final activities = ref.watch(activitiesProvider(hId)).valueOrNull ?? [];
+    final itineraryDays =
+        ref.watch(itineraryDaysProvider(hId)).valueOrNull ?? [];
+
+    // Reload documents when returning to screen
+    ref.listen(holidaysProvider, (prev, next) => _loadDocuments());
+
+    final totalCost =
+        _totalCost(accommodations, travelLegs, carHires, activities);
 
     return holidaysAsync.when(
       loading: () =>
@@ -144,21 +233,8 @@ class _HolidayDetailScreenState extends ConsumerState<HolidayDetailScreen> {
           showBackButton: true,
           title: holiday.name.isNotEmpty ? holiday.name : 'Holiday Details',
           actions: [
-            IconButton(
-              icon: const Icon(Icons.edit_rounded, color: Colors.white, size: 20),
-              tooltip: 'Edit',
-              onPressed: () =>
-                  context.push('/edit-holiday/${widget.holidayId}'),
-            ),
-            IconButton(
-              icon: const Icon(Icons.share_rounded, color: Colors.white, size: 20),
-              tooltip: 'Summary',
-              onPressed: () =>
-                  context.push('/holiday-summary/${widget.holidayId}'),
-            ),
-            IconButton(
-              icon: const Icon(Icons.delete_outline_rounded,
-                  color: Colors.white, size: 20),
+            _buildActionButton(
+              icon: Icons.delete_outline_rounded,
               tooltip: 'Delete',
               onPressed: () => _confirmDelete(context),
             ),
@@ -168,315 +244,307 @@ class _HolidayDetailScreenState extends ConsumerState<HolidayDetailScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Holiday info header card
+                // Holiday info card — tappable like other panels
                 Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          holiday.name.isNotEmpty
-                              ? holiday.name
-                              : 'Untitled Holiday',
-                          style: AppTextStyles.heading,
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            const Icon(Icons.calendar_today_rounded,
-                                size: 16, color: AppColors.textMuted),
-                            const SizedBox(width: 6),
-                            Text(
-                              _dateRange(holiday.startDate, holiday.endDate),
-                              style: AppTextStyles.body.copyWith(
-                                  color: AppColors.textSecondary),
-                            ),
-                          ],
-                        ),
-                        if (holiday.startDate.isNotEmpty) ...[
-                          const SizedBox(height: 4),
+                  margin: const EdgeInsets.only(bottom: 8),
+                  child: InkWell(
+                    onTap: () =>
+                        context.push('/edit-holiday/${widget.holidayId}'),
+                    borderRadius: BorderRadius.circular(12),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 14),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
                           Row(
                             children: [
-                              const Icon(Icons.schedule_rounded,
-                                  size: 16, color: AppColors.textMuted),
-                              const SizedBox(width: 6),
-                              Text(
-                                formatDateRelative(holiday.startDate),
-                                style: AppTextStyles.caption.copyWith(
-                                  fontWeight: FontWeight.w600,
-                                  color: _countdownColor(holiday.startDate),
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: AppColors.primary
+                                      .withValues(alpha: 0.12),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                    Icons.flight_takeoff_rounded,
+                                    color: AppColors.primary,
+                                    size: 20),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      holiday.name.isNotEmpty
+                                          ? holiday.name
+                                          : 'Untitled Holiday',
+                                      style: AppTextStyles.bodyBold,
+                                    ),
+                                    if (holiday.startDate.isNotEmpty)
+                                      Text(
+                                        _dateRange(holiday.startDate,
+                                            holiday.endDate),
+                                        style: AppTextStyles.caption
+                                            .copyWith(
+                                                color: AppColors
+                                                    .textSecondary),
+                                      ),
+                                  ],
                                 ),
                               ),
+                              const Icon(Icons.edit_rounded,
+                                  color: AppColors.textMuted, size: 18),
+                              const SizedBox(width: 4),
+                              const Icon(Icons.chevron_right_rounded,
+                                  color: AppColors.textMuted, size: 22),
                             ],
                           ),
-                        ],
-                        if (holiday.notes.isNotEmpty) ...[
-                          const SizedBox(height: 12),
-                          Text(
-                            holiday.notes,
-                            style: AppTextStyles.body
-                                .copyWith(color: AppColors.textSecondary),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                // Sub-entity sections
-                if (!_loaded)
-                  const Center(
-                    child: Padding(
-                      padding: EdgeInsets.all(32),
-                      child: CircularProgressIndicator(),
-                    ),
-                  )
-                else ...[
-                  // Travellers
-                  _SectionTile(
-                    icon: Icons.people_rounded,
-                    iconColor: AppColors.primary,
-                    title: 'Travellers',
-                    count: _travelers.length,
-                    onNavigate: () =>
-                        context.push('/travelers/${widget.holidayId}'),
-                    children: _travelers
-                        .take(3)
-                        .map((t) => _PreviewRow(
-                              label: t.name.isNotEmpty ? t.name : 'Unnamed',
-                              detail: t.notes,
-                            ))
-                        .toList(),
-                  ),
-                  const SizedBox(height: 8),
-
-                  // Accommodation
-                  _SectionTile(
-                    icon: Icons.hotel_rounded,
-                    iconColor: const Color(0xFF1565C0),
-                    title: 'Accommodation',
-                    count: _accommodations.length,
-                    onNavigate: () =>
-                        context.push('/accommodations/${widget.holidayId}'),
-                    children: _accommodations
-                        .take(3)
-                        .map((a) => _PreviewRow(
-                              label: a.name.isNotEmpty ? a.name : 'Unnamed',
-                              detail: [
-                                if (a.checkIn.isNotEmpty)
-                                  formatDateUK(a.checkIn),
-                                if (a.checkOut.isNotEmpty)
-                                  '- ${formatDateUK(a.checkOut)}',
-                                if (a.cost > 0) formatGBP(a.cost),
-                              ].join(' '),
-                            ))
-                        .toList(),
-                  ),
-                  const SizedBox(height: 8),
-
-                  // Travel
-                  _SectionTile(
-                    icon: Icons.flight_rounded,
-                    iconColor: const Color(0xFF00695C),
-                    title: 'Travel',
-                    count: _travelLegs.length,
-                    onNavigate: () =>
-                        context.push('/travel/${widget.holidayId}'),
-                    children: _travelLegs
-                        .take(3)
-                        .map((t) => _PreviewRow(
-                              label: [
-                                if (t.from.isNotEmpty) t.from,
-                                if (t.to.isNotEmpty) t.to,
-                              ].join(' -> '),
-                              detail: [
-                                if (t.departureDate.isNotEmpty)
-                                  formatDateUK(t.departureDate),
-                                if (t.carrier.isNotEmpty) t.carrier,
-                                if (t.cost > 0) formatGBP(t.cost),
-                              ].join(' | '),
-                            ))
-                        .toList(),
-                  ),
-                  const SizedBox(height: 8),
-
-                  // Car Hire
-                  _SectionTile(
-                    icon: Icons.directions_car_rounded,
-                    iconColor: const Color(0xFFFF9800),
-                    title: 'Car Hire',
-                    count: _carHires.length,
-                    onNavigate: () =>
-                        context.push('/car-hire/${widget.holidayId}'),
-                    children: _carHires
-                        .take(3)
-                        .map((c) => _PreviewRow(
-                              label: c.company.isNotEmpty
-                                  ? c.company
-                                  : 'Unnamed',
-                              detail: [
-                                if (c.pickupDate.isNotEmpty)
-                                  formatDateUK(c.pickupDate),
-                                if (c.dropoffDate.isNotEmpty)
-                                  '- ${formatDateUK(c.dropoffDate)}',
-                                if (c.totalCost > 0) formatGBP(c.totalCost),
-                              ].join(' '),
-                            ))
-                        .toList(),
-                  ),
-                  const SizedBox(height: 8),
-
-                  // Activities
-                  _SectionTile(
-                    icon: Icons.local_activity_rounded,
-                    iconColor: const Color(0xFFE53935),
-                    title: 'Activities',
-                    count: _activities.length,
-                    onNavigate: () =>
-                        context.push('/activities/${widget.holidayId}'),
-                    children: _activities
-                        .take(3)
-                        .map((a) => _PreviewRow(
-                              label: a.name.isNotEmpty ? a.name : 'Unnamed',
-                              detail: [
-                                if (a.date.isNotEmpty) formatDateUK(a.date),
-                                if (a.location.isNotEmpty) a.location,
-                                if (a.cost > 0) formatGBP(a.cost),
-                              ].join(' | '),
-                            ))
-                        .toList(),
-                  ),
-                  const SizedBox(height: 8),
-
-                  // Itinerary
-                  _SectionTile(
-                    icon: Icons.calendar_today_rounded,
-                    iconColor: const Color(0xFF6A1B9A),
-                    title: 'Itinerary',
-                    count: _itineraryDays.length,
-                    onNavigate: () =>
-                        context.push('/itinerary/${widget.holidayId}'),
-                    children: _itineraryDays
-                        .take(3)
-                        .map((d) => _PreviewRow(
-                              label: d.title.isNotEmpty
-                                  ? 'Day ${d.dayNumber}: ${d.title}'
-                                  : 'Day ${d.dayNumber}',
-                              detail: d.date.isNotEmpty
-                                  ? formatDateUK(d.date)
-                                  : '',
-                            ))
-                        .toList(),
-                  ),
-                  const SizedBox(height: 8),
-
-                  // Documents
-                  _SectionTile(
-                    icon: Icons.attach_file_rounded,
-                    iconColor: const Color(0xFF5D4037),
-                    title: 'Documents',
-                    count: _documents.length,
-                    onNavigate: () => context
-                        .push('/documents/holiday/${widget.holidayId}'),
-                    children: _documents
-                        .take(3)
-                        .map((d) => _PreviewRow(
-                              label: d.filename.isNotEmpty
-                                  ? d.filename
-                                  : 'Unnamed',
-                              detail: d.fileType,
-                            ))
-                        .toList(),
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Total cost summary
-                  if (_totalCost > 0)
-                    Card(
-                      color: AppColors.softPurple,
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                color:
-                                    AppColors.primary.withValues(alpha: 0.15),
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Icon(
-                                Icons.account_balance_wallet_rounded,
-                                color: AppColors.primary,
-                                size: 24,
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
+                          if (holiday.startDate.isNotEmpty) ...[
+                            const SizedBox(height: 8),
+                            Padding(
+                              padding: const EdgeInsets.only(left: 48),
+                              child: Row(
                                 children: [
-                                  Text('Estimated Total Cost',
-                                      style: AppTextStyles.caption.copyWith(
-                                          fontWeight: FontWeight.w600)),
-                                  const SizedBox(height: 2),
+                                  const Icon(Icons.schedule_rounded,
+                                      size: 14, color: AppColors.textMuted),
+                                  const SizedBox(width: 4),
                                   Text(
-                                    formatGBP(_totalCost),
-                                    style: AppTextStyles.heading.copyWith(
-                                      color: AppColors.primary,
-                                      fontSize: 22,
+                                    formatDateRelative(holiday.startDate),
+                                    style: AppTextStyles.caption.copyWith(
+                                      fontWeight: FontWeight.w600,
+                                      color: _countdownColor(
+                                          holiday.startDate),
                                     ),
                                   ),
                                 ],
                               ),
                             ),
                           ],
-                        ),
-                      ),
-                    ),
-
-                  // Cost breakdown
-                  if (_totalCost > 0) ...[
-                    const SizedBox(height: 8),
-                    Card(
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('Cost Breakdown',
-                                style: AppTextStyles.bodyBold),
-                            const SizedBox(height: 12),
-                            _CostRow(
-                              label: 'Accommodation',
-                              amount: _accommodations.fold(
-                                  0.0, (sum, a) => sum + a.cost),
-                            ),
-                            _CostRow(
-                              label: 'Travel',
-                              amount: _travelLegs.fold(
-                                  0.0, (sum, t) => sum + t.cost),
-                            ),
-                            _CostRow(
-                              label: 'Car Hire',
-                              amount: _carHires.fold(
-                                  0.0, (sum, c) => sum + c.totalCost),
-                            ),
-                            _CostRow(
-                              label: 'Activities',
-                              amount: _activities.fold(
-                                  0.0, (sum, a) => sum + a.cost),
+                          if (holiday.notes.isNotEmpty) ...[
+                            const SizedBox(height: 6),
+                            Padding(
+                              padding: const EdgeInsets.only(left: 48),
+                              child: Text(
+                                holiday.notes,
+                                style: AppTextStyles.body.copyWith(
+                                    color: AppColors.textSecondary),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             ),
                           ],
-                        ),
+                        ],
                       ),
                     ),
-                  ],
+                  ),
+                ),
+                // Section toggle chips
+                if (_sectionsLoaded)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
+                      children: [
+                        _sectionChip('travelers', 'Travellers',
+                            Icons.people_rounded),
+                        _sectionChip('accommodation', 'Accommodation',
+                            Icons.hotel_rounded),
+                        _sectionChip(
+                            'travel', 'Travel', Icons.flight_rounded),
+                        _sectionChip('car_hire', 'Car Hire',
+                            Icons.directions_car_rounded),
+                        _sectionChip('activities', 'Activities',
+                            Icons.local_activity_rounded),
+                        _sectionChip('itinerary', 'Itinerary',
+                            Icons.calendar_today_rounded),
+                        _sectionChip('documents', 'Documents',
+                            Icons.attach_file_rounded),
+                      ],
+                    ),
+                  ),
+                // Sub-entity sections
+                if (_enabledSections.contains('travelers'))
+                _SectionPanel(
+                  icon: Icons.people_rounded,
+                  iconColor: AppColors.primary,
+                  title: 'Travellers',
+                  count: travelers.length,
+                  onTap: () =>
+                      context.push('/travelers/${widget.holidayId}'),
+                  children: travelers
+                      .map((t) => t.name.isNotEmpty ? t.name : 'Unnamed')
+                      .toList(),
+                ),
+                if (_enabledSections.contains('accommodation'))
+                _SectionPanel(
+                  icon: Icons.hotel_rounded,
+                  iconColor: const Color(0xFF1565C0),
+                  title: 'Accommodation',
+                  count: accommodations.length,
+                  onTap: () =>
+                      context.push('/accommodations/${widget.holidayId}'),
+                  children: accommodations
+                      .map((a) => a.name.isNotEmpty ? a.name : 'Unnamed')
+                      .toList(),
+                ),
+                if (_enabledSections.contains('travel'))
+                _SectionPanel(
+                  icon: Icons.flight_rounded,
+                  iconColor: const Color(0xFF00695C),
+                  title: 'Travel',
+                  count: travelLegs.length,
+                  onTap: () =>
+                      context.push('/travel/${widget.holidayId}'),
+                  children: travelLegs.map((t) {
+                    final route = [
+                      if (t.from.isNotEmpty) t.from,
+                      if (t.to.isNotEmpty) t.to,
+                    ].join(' → ');
+                    return route.isNotEmpty ? route : 'Unnamed';
+                  }).toList(),
+                ),
+                if (_enabledSections.contains('car_hire'))
+                _SectionPanel(
+                  icon: Icons.directions_car_rounded,
+                  iconColor: const Color(0xFFFF9800),
+                  title: 'Car Hire',
+                  count: carHires.length,
+                  onTap: () =>
+                      context.push('/car-hire/${widget.holidayId}'),
+                  children: carHires
+                      .map((c) =>
+                          c.company.isNotEmpty ? c.company : 'Unnamed')
+                      .toList(),
+                ),
+                if (_enabledSections.contains('activities'))
+                _SectionPanel(
+                  icon: Icons.local_activity_rounded,
+                  iconColor: const Color(0xFFE53935),
+                  title: 'Activities',
+                  count: activities.length,
+                  onTap: () =>
+                      context.push('/activities/${widget.holidayId}'),
+                  children: activities
+                      .map((a) => a.name.isNotEmpty ? a.name : 'Unnamed')
+                      .toList(),
+                ),
+                if (_enabledSections.contains('itinerary'))
+                _SectionPanel(
+                  icon: Icons.calendar_today_rounded,
+                  iconColor: const Color(0xFF6A1B9A),
+                  title: 'Itinerary',
+                  count: itineraryDays.length,
+                  onTap: () =>
+                      context.push('/itinerary/${widget.holidayId}'),
+                  children: itineraryDays
+                      .map((d) => d.title.isNotEmpty
+                          ? 'Day ${d.dayNumber}: ${d.title}'
+                          : 'Day ${d.dayNumber}')
+                      .toList(),
+                ),
+                if (_enabledSections.contains('documents'))
+                _SectionPanel(
+                  icon: Icons.attach_file_rounded,
+                  iconColor: const Color(0xFF5D4037),
+                  title: 'Documents',
+                  count: _documents.length,
+                  onTap: () => context
+                      .push('/documents/holiday/${widget.holidayId}'),
+                  children: _documents
+                      .map((d) =>
+                          d.filename.isNotEmpty ? d.filename : 'Unnamed')
+                      .toList(),
+                ),
+                const SizedBox(height: 16),
 
-                  const SizedBox(height: 64),
+                // Total cost summary
+                if (totalCost > 0)
+                  Card(
+                    color: AppColors.softPurple,
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color:
+                                  AppColors.primary.withValues(alpha: 0.15),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.account_balance_wallet_rounded,
+                              color: AppColors.primary,
+                              size: 24,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('Estimated Total Cost',
+                                    style: AppTextStyles.caption.copyWith(
+                                        fontWeight: FontWeight.w600)),
+                                const SizedBox(height: 2),
+                                Text(
+                                  formatGBP(totalCost),
+                                  style: AppTextStyles.heading.copyWith(
+                                    color: AppColors.primary,
+                                    fontSize: 22,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                // Cost breakdown
+                if (totalCost > 0) ...[
+                  const SizedBox(height: 8),
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Cost Breakdown',
+                              style: AppTextStyles.bodyBold),
+                          const SizedBox(height: 12),
+                          _CostRow(
+                            label: 'Accommodation',
+                            amount: accommodations.fold(
+                                0.0, (sum, a) => sum + a.cost),
+                          ),
+                          _CostRow(
+                            label: 'Travel',
+                            amount: travelLegs.fold(
+                                0.0, (sum, t) => sum + t.cost),
+                          ),
+                          _CostRow(
+                            label: 'Car Hire',
+                            amount: carHires.fold(
+                                0.0, (sum, c) => sum + c.totalCost),
+                          ),
+                          _CostRow(
+                            label: 'Activities',
+                            amount: activities.fold(
+                                0.0, (sum, a) => sum + a.cost),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                 ],
+
+                const SizedBox(height: 64),
               ],
             ),
           ),
@@ -502,16 +570,16 @@ class _HolidayDetailScreenState extends ConsumerState<HolidayDetailScreen> {
 }
 
 // ---------------------------------------------------------------------------
-// Collapsible section tile
+// Section panel — expanded with items when data exists, tappable to navigate
 // ---------------------------------------------------------------------------
 
-class _SectionTile extends StatelessWidget {
-  const _SectionTile({
+class _SectionPanel extends StatelessWidget {
+  const _SectionPanel({
     required this.icon,
     required this.iconColor,
     required this.title,
     required this.count,
-    required this.onNavigate,
+    required this.onTap,
     required this.children,
   });
 
@@ -519,115 +587,83 @@ class _SectionTile extends StatelessWidget {
   final Color iconColor;
   final String title;
   final int count;
-  final VoidCallback onNavigate;
-  final List<Widget> children;
+  final VoidCallback onTap;
+  final List<String> children;
 
   @override
   Widget build(BuildContext context) {
     return Card(
-      clipBehavior: Clip.antiAlias,
-      child: ExpansionTile(
-        leading: Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: iconColor.withValues(alpha: 0.12),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(icon, color: iconColor, size: 20),
-        ),
-        title: Row(
-          children: [
-            Expanded(
-              child: Text(title, style: AppTextStyles.bodyBold),
-            ),
-            Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-              decoration: BoxDecoration(
-                color: count > 0 ? AppColors.softPurple : AppColors.softLilac,
-                borderRadius: BorderRadius.circular(12),
+      margin: const EdgeInsets.only(bottom: 8),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: iconColor.withValues(alpha: 0.12),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(icon, color: iconColor, size: 20),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(title, style: AppTextStyles.bodyBold),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: count > 0
+                          ? AppColors.softPurple
+                          : AppColors.softLilac,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      '$count',
+                      style: AppTextStyles.caption.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: count > 0
+                            ? AppColors.primary
+                            : AppColors.textMuted,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Icon(Icons.chevron_right_rounded,
+                      color: AppColors.textMuted, size: 22),
+                ],
               ),
-              child: Text(
-                '$count',
-                style: AppTextStyles.caption.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: count > 0
-                      ? AppColors.primary
-                      : AppColors.textMuted,
-                ),
-              ),
-            ),
-          ],
-        ),
-        childrenPadding:
-            const EdgeInsets.only(left: 16, right: 16, bottom: 12),
-        expandedCrossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          if (children.isEmpty)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              child: Text(
-                'No items yet',
-                style: AppTextStyles.caption,
-              ),
-            )
-          else
-            ...children,
-          const SizedBox(height: 8),
-          Align(
-            alignment: Alignment.centerRight,
-            child: TextButton.icon(
-              onPressed: onNavigate,
-              icon: Icon(Icons.open_in_new_rounded,
-                  size: 16, color: AppColors.primary),
-              label: Text(
-                'View All',
-                style: AppTextStyles.caption.copyWith(
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Preview row for items inside an expansion tile
-// ---------------------------------------------------------------------------
-
-class _PreviewRow extends StatelessWidget {
-  const _PreviewRow({required this.label, this.detail});
-
-  final String label;
-  final String? detail;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        children: [
-          const Icon(Icons.circle, size: 6, color: AppColors.textMuted),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(label,
-                    style: AppTextStyles.body,
-                    overflow: TextOverflow.ellipsis),
-                if (detail != null && detail!.isNotEmpty)
-                  Text(detail!,
-                      style: AppTextStyles.caption,
-                      overflow: TextOverflow.ellipsis),
+              if (children.isNotEmpty) ...[
+                const SizedBox(height: 10),
+                ...children.map((item) => Padding(
+                      padding: const EdgeInsets.only(left: 48, bottom: 4),
+                      child: Row(
+                        children: [
+                          Icon(Icons.circle,
+                              size: 5, color: AppColors.textMuted),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              item,
+                              style: AppTextStyles.body
+                                  .copyWith(color: AppColors.textSecondary),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    )),
               ],
-            ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

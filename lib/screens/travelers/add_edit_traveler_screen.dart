@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:my_holidays/models/traveler.dart';
 import 'package:my_holidays/providers/traveler_provider.dart';
+import 'package:my_holidays/theme/app_colors.dart';
 import 'package:my_holidays/theme/app_text_styles.dart';
 import 'package:my_holidays/utils/id_generator.dart';
 import 'package:my_holidays/widgets/app_scaffold.dart';
@@ -101,75 +102,77 @@ class _AddEditTravelerScreenState extends ConsumerState<AddEditTravelerScreen> {
       body: travelersAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('Error: $e')),
-        data: (_) => SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  _isEditing ? 'Edit Traveller' : 'New Traveller',
-                  style: AppTextStyles.subheading,
-                ),
-                const SizedBox(height: 24),
+        data: (_) => Stack(
+          children: [
+            SingleChildScrollView(
+              padding: const EdgeInsets.all(20),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      _isEditing ? 'Edit Traveller' : 'New Traveller',
+                      style: AppTextStyles.subheading,
+                    ),
+                    const SizedBox(height: 24),
 
-                // Name field
-                Text('Name', style: AppTextStyles.label),
-                const SizedBox(height: 6),
-                TextFormField(
-                  controller: _nameController,
-                  textCapitalization: TextCapitalization.words,
-                  decoration: const InputDecoration(
-                    hintText: 'Enter traveller name',
-                  ),
-                  validator: (v) {
-                    if (v == null || v.trim().isEmpty) {
-                      return 'Name is required';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 20),
+                    // Name field
+                    Text('Name', style: AppTextStyles.label),
+                    const SizedBox(height: 6),
+                    TextFormField(
+                      controller: _nameController,
+                      textCapitalization: TextCapitalization.words,
+                      decoration: const InputDecoration(
+                        hintText: 'Enter traveller name',
+                      ),
+                      validator: (v) {
+                        if (v == null || v.trim().isEmpty) {
+                          return 'Name is required';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 20),
 
-                // Notes field
-                Text('Notes', style: AppTextStyles.label),
-                const SizedBox(height: 6),
-                TextFormField(
-                  controller: _notesController,
-                  textCapitalization: TextCapitalization.sentences,
-                  maxLines: 4,
-                  decoration: const InputDecoration(
-                    hintText: 'Passport number, dietary needs, etc.',
-                  ),
-                ),
-                const SizedBox(height: 32),
+                    // Notes field
+                    Text('Notes', style: AppTextStyles.label),
+                    const SizedBox(height: 6),
+                    TextFormField(
+                      controller: _notesController,
+                      textCapitalization: TextCapitalization.sentences,
+                      maxLines: 4,
+                      decoration: const InputDecoration(
+                        hintText: 'Passport number, dietary needs, etc.',
+                      ),
+                    ),
 
-                // Save button
-                ElevatedButton(
-                  onPressed: _isLoading ? null : _save,
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                  ),
-                  child: _isLoading
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                      : Text(
-                          _isEditing ? 'Save Changes' : 'Add Traveller',
-                          style: AppTextStyles.buttonText,
-                        ),
+                    const SizedBox(height: 80),
+                  ],
                 ),
-
-                const SizedBox(height: 80),
-              ],
+              ),
             ),
-          ),
+            Positioned(
+              right: 16,
+              bottom: 16,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: AppColors.primaryLight.withValues(alpha: 0.7),
+                  shape: BoxShape.circle,
+                  boxShadow: const [
+                    BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2)),
+                  ],
+                ),
+                child: IconButton(
+                  onPressed: _isLoading ? null : _save,
+                  tooltip: _isEditing ? 'Save' : 'Add',
+                  icon: const Icon(Icons.check_rounded, color: Colors.white, size: 22),
+                  padding: const EdgeInsets.all(10),
+                  constraints: const BoxConstraints(),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:my_holidays/models/activity.dart';
 import 'package:my_holidays/providers/activity_provider.dart';
+import 'package:my_holidays/providers/holiday_provider.dart';
 import 'package:my_holidays/theme/app_colors.dart';
 import 'package:my_holidays/theme/app_text_styles.dart';
 import 'package:my_holidays/utils/id_generator.dart';
@@ -40,6 +41,14 @@ class _AddEditActivityScreenState
   String _entityId = '';
   bool _loaded = false;
   bool _saving = false;
+  String _holidayStartDate = '';
+  String _date = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadHolidayDates();
+  }
 
   @override
   void dispose() {
@@ -51,6 +60,23 @@ class _AddEditActivityScreenState
     _bookingRefController.dispose();
     _notesController.dispose();
     super.dispose();
+  }
+
+  String _displayDate(String isoDate) {
+    if (isoDate.isEmpty) return '';
+    final date = DateTime.tryParse(isoDate);
+    if (date == null) return isoDate;
+    return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
+  }
+
+  Future<void> _loadHolidayDates() async {
+    final holidays = await ref.read(holidaysProvider.future);
+    final holiday = holidays.where((h) => h.id == widget.holidayId).firstOrNull;
+    if (holiday != null && mounted) {
+      setState(() {
+        _holidayStartDate = holiday.startDate;
+      });
+    }
   }
 
   void _populateFromExisting(List<Activity> activities) {
@@ -66,7 +92,8 @@ class _AddEditActivityScreenState
         _entityId = activity.id;
 
         _nameController.text = activity.name;
-        _dateController.text = activity.date;
+        _date = activity.date;
+        _dateController.text = _displayDate(activity.date);
         _timeController.text = activity.time;
         _locationController.text = activity.location;
         _costController.text =
@@ -81,18 +108,21 @@ class _AddEditActivityScreenState
     }
   }
 
-  Future<void> _pickDate(TextEditingController controller) async {
-    final initial = DateTime.tryParse(controller.text) ?? DateTime.now();
+  Future<void> _pickDate(TextEditingController controller, {String? defaultDate}) async {
+    final initial = DateTime.tryParse(_date) ?? DateTime.tryParse(defaultDate ?? '') ?? DateTime.now();
     final picked = await showDatePicker(
       context: context,
       initialDate: initial,
       firstDate: DateTime(2020),
       lastDate: DateTime(2100),
+      locale: const Locale('en', 'GB'),
     );
     if (picked != null) {
-      controller.text =
-          '${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}';
-      setState(() {});
+      final iso = '${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}';
+      setState(() {
+        _date = iso;
+        controller.text = _displayDate(iso);
+      });
     }
   }
 
@@ -104,7 +134,7 @@ class _AddEditActivityScreenState
       id: _entityId,
       holidayId: widget.holidayId,
       name: _nameController.text.trim(),
-      date: _dateController.text.trim(),
+      date: _date,
       time: _timeController.text.trim(),
       location: _locationController.text.trim(),
       cost: double.tryParse(_costController.text.trim()) ?? 0,
@@ -150,134 +180,131 @@ class _AddEditActivityScreenState
   }
 
   Widget _buildForm() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
-      child: Form(
-        key: _formKey,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Name
-            Text('Name', style: AppTextStyles.label),
-            const SizedBox(height: 6),
-            TextFormField(
-              controller: _nameController,
-              decoration:
-                  const InputDecoration(hintText: 'e.g. Snorkelling tour'),
-              textCapitalization: TextCapitalization.sentences,
-              validator: (v) =>
-                  (v == null || v.trim().isEmpty) ? 'Name is required' : null,
-            ),
-            const SizedBox(height: 16),
-
-            // Date
-            Text('Date', style: AppTextStyles.label),
-            const SizedBox(height: 6),
-            TextFormField(
-              controller: _dateController,
-              decoration: InputDecoration(
-                hintText: 'YYYY-MM-DD',
-                suffixIcon: IconButton(
-                  icon: const Icon(Icons.calendar_today_rounded, size: 20),
-                  onPressed: () => _pickDate(_dateController),
+    return Stack(
+      children: [
+        SingleChildScrollView(
+          padding: const EdgeInsets.all(20),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Name
+                Text('Name', style: AppTextStyles.label),
+                const SizedBox(height: 6),
+                TextFormField(
+                  controller: _nameController,
+                  decoration:
+                      const InputDecoration(hintText: 'e.g. Snorkelling tour'),
+                  textCapitalization: TextCapitalization.sentences,
+                  validator: (v) =>
+                      (v == null || v.trim().isEmpty) ? 'Name is required' : null,
                 ),
-              ),
-              readOnly: true,
-              onTap: () => _pickDate(_dateController),
-            ),
-            const SizedBox(height: 16),
+                const SizedBox(height: 16),
 
-            // Time
-            Text('Time', style: AppTextStyles.label),
-            const SizedBox(height: 6),
-            TextFormField(
-              controller: _timeController,
-              decoration: const InputDecoration(hintText: 'e.g. 09:00'),
-              textInputAction: TextInputAction.next,
-            ),
-            const SizedBox(height: 16),
-
-            // Location
-            Text('Location', style: AppTextStyles.label),
-            const SizedBox(height: 6),
-            TextFormField(
-              controller: _locationController,
-              decoration: const InputDecoration(hintText: 'Where is it?'),
-              textCapitalization: TextCapitalization.words,
-            ),
-            const SizedBox(height: 16),
-
-            // Cost
-            Text('Cost', style: AppTextStyles.label),
-            const SizedBox(height: 6),
-            TextFormField(
-              controller: _costController,
-              decoration: const InputDecoration(
-                hintText: '0.00',
-                prefixText: '\u00A3 ',
-              ),
-              keyboardType:
-                  const TextInputType.numberWithOptions(decimal: true),
-            ),
-            const SizedBox(height: 16),
-
-            // Booking Reference
-            Text('Booking Reference', style: AppTextStyles.label),
-            const SizedBox(height: 6),
-            TextFormField(
-              controller: _bookingRefController,
-              decoration: const InputDecoration(hintText: 'Reference number'),
-              textCapitalization: TextCapitalization.characters,
-            ),
-            const SizedBox(height: 16),
-
-            // Notes
-            Text('Notes', style: AppTextStyles.label),
-            const SizedBox(height: 6),
-            TextFormField(
-              controller: _notesController,
-              decoration: const InputDecoration(hintText: 'Optional notes'),
-              maxLines: 3,
-              textCapitalization: TextCapitalization.sentences,
-            ),
-
-            // Document attachments
-            DocumentAttachments(
-              parentType: 'activity',
-              parentId: _entityId,
-            ),
-
-            const SizedBox(height: 24),
-
-            // Save button
-            SizedBox(
-              height: 50,
-              child: ElevatedButton(
-                onPressed: _saving ? null : _save,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
+                // Date
+                Text('Date', style: AppTextStyles.label),
+                const SizedBox(height: 6),
+                TextFormField(
+                  controller: _dateController,
+                  decoration: InputDecoration(
+                    hintText: 'DD/MM/YYYY',
+                    suffixIcon: IconButton(
+                      icon: const Icon(Icons.calendar_today_rounded, size: 20),
+                      onPressed: () => _pickDate(_dateController, defaultDate: _holidayStartDate),
+                    ),
                   ),
+                  readOnly: true,
+                  onTap: () => _pickDate(_dateController, defaultDate: _holidayStartDate),
                 ),
-                child: _saving
-                    ? const SizedBox(
-                        width: 22,
-                        height: 22,
-                        child: CircularProgressIndicator(
-                            strokeWidth: 2, color: Colors.white),
-                      )
-                    : Text(
-                        _isEdit ? 'Update Activity' : 'Save Activity',
-                        style: AppTextStyles.buttonText,
-                      ),
-              ),
+                const SizedBox(height: 16),
+
+                // Time
+                Text('Time', style: AppTextStyles.label),
+                const SizedBox(height: 6),
+                TextFormField(
+                  controller: _timeController,
+                  decoration: const InputDecoration(hintText: 'e.g. 09:00'),
+                  textInputAction: TextInputAction.next,
+                ),
+                const SizedBox(height: 16),
+
+                // Location
+                Text('Location', style: AppTextStyles.label),
+                const SizedBox(height: 6),
+                TextFormField(
+                  controller: _locationController,
+                  decoration: const InputDecoration(hintText: 'Where is it?'),
+                  textCapitalization: TextCapitalization.words,
+                ),
+                const SizedBox(height: 16),
+
+                // Cost
+                Text('Cost', style: AppTextStyles.label),
+                const SizedBox(height: 6),
+                TextFormField(
+                  controller: _costController,
+                  decoration: const InputDecoration(
+                    hintText: '0.00',
+                    prefixText: '\u00A3 ',
+                  ),
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
+                ),
+                const SizedBox(height: 16),
+
+                // Booking Reference
+                Text('Booking Reference', style: AppTextStyles.label),
+                const SizedBox(height: 6),
+                TextFormField(
+                  controller: _bookingRefController,
+                  decoration: const InputDecoration(hintText: 'Reference number'),
+                  textCapitalization: TextCapitalization.characters,
+                ),
+                const SizedBox(height: 16),
+
+                // Notes
+                Text('Notes', style: AppTextStyles.label),
+                const SizedBox(height: 6),
+                TextFormField(
+                  controller: _notesController,
+                  decoration: const InputDecoration(hintText: 'Optional notes'),
+                  maxLines: 3,
+                  textCapitalization: TextCapitalization.sentences,
+                ),
+
+                // Document attachments
+                DocumentAttachments(
+                  parentType: 'activity',
+                  parentId: _entityId,
+                ),
+
+                const SizedBox(height: 80),
+              ],
             ),
-            const SizedBox(height: 80),
-          ],
+          ),
         ),
-      ),
+        Positioned(
+          right: 16,
+          bottom: 16,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: AppColors.primaryLight.withValues(alpha: 0.7),
+              shape: BoxShape.circle,
+              boxShadow: const [
+                BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2)),
+              ],
+            ),
+            child: IconButton(
+              onPressed: _saving ? null : _save,
+              tooltip: _isEdit ? 'Save' : 'Add',
+              icon: const Icon(Icons.check_rounded, color: Colors.white, size: 22),
+              padding: const EdgeInsets.all(10),
+              constraints: const BoxConstraints(),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

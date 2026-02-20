@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:my_holidays/models/car_hire.dart';
 import 'package:my_holidays/providers/car_hire_provider.dart';
+import 'package:my_holidays/providers/holiday_provider.dart';
 import 'package:my_holidays/theme/app_colors.dart';
 import 'package:my_holidays/theme/app_text_styles.dart';
 import 'package:my_holidays/utils/id_generator.dart';
@@ -44,6 +45,34 @@ class _AddEditCarHireScreenState extends ConsumerState<AddEditCarHireScreen> {
   String _entityId = '';
   bool _loaded = false;
   bool _saving = false;
+  String _holidayStartDate = '';
+  String _holidayEndDate = '';
+  String _pickupDate = '';
+  String _dropoffDate = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadHolidayDates();
+  }
+
+  String _displayDate(String isoDate) {
+    if (isoDate.isEmpty) return '';
+    final date = DateTime.tryParse(isoDate);
+    if (date == null) return isoDate;
+    return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
+  }
+
+  Future<void> _loadHolidayDates() async {
+    final holidays = await ref.read(holidaysProvider.future);
+    final holiday = holidays.where((h) => h.id == widget.holidayId).firstOrNull;
+    if (holiday != null && mounted) {
+      setState(() {
+        _holidayStartDate = holiday.startDate;
+        _holidayEndDate = holiday.endDate;
+      });
+    }
+  }
 
   @override
   void dispose() {
@@ -75,10 +104,12 @@ class _AddEditCarHireScreenState extends ConsumerState<AddEditCarHireScreen> {
 
         _companyController.text = hire.company;
         _pickupLocationController.text = hire.pickupLocation;
-        _pickupDateController.text = hire.pickupDate;
+        _pickupDate = hire.pickupDate;
+        _pickupDateController.text = _displayDate(hire.pickupDate);
         _pickupTimeController.text = hire.pickupTime;
         _dropoffLocationController.text = hire.dropoffLocation;
-        _dropoffDateController.text = hire.dropoffDate;
+        _dropoffDate = hire.dropoffDate;
+        _dropoffDateController.text = _displayDate(hire.dropoffDate);
         _dropoffTimeController.text = hire.dropoffTime;
         _driversController.text = hire.drivers;
         _depositController.text =
@@ -95,18 +126,27 @@ class _AddEditCarHireScreenState extends ConsumerState<AddEditCarHireScreen> {
     }
   }
 
-  Future<void> _pickDate(TextEditingController controller) async {
-    final initial = DateTime.tryParse(controller.text) ?? DateTime.now();
+  Future<void> _pickDate({
+    required TextEditingController controller,
+    required String currentIsoDate,
+    required ValueChanged<String> onDatePicked,
+    String? defaultDate,
+  }) async {
+    final initial = DateTime.tryParse(currentIsoDate) ?? DateTime.tryParse(defaultDate ?? '') ?? DateTime.now();
     final picked = await showDatePicker(
       context: context,
       initialDate: initial,
       firstDate: DateTime(2020),
       lastDate: DateTime(2100),
+      locale: const Locale('en', 'GB'),
     );
     if (picked != null) {
-      controller.text =
+      final isoDate =
           '${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}';
-      setState(() {});
+      setState(() {
+        onDatePicked(isoDate);
+        controller.text = _displayDate(isoDate);
+      });
     }
   }
 
@@ -119,10 +159,10 @@ class _AddEditCarHireScreenState extends ConsumerState<AddEditCarHireScreen> {
       holidayId: widget.holidayId,
       company: _companyController.text.trim(),
       pickupLocation: _pickupLocationController.text.trim(),
-      pickupDate: _pickupDateController.text.trim(),
+      pickupDate: _pickupDate,
       pickupTime: _pickupTimeController.text.trim(),
       dropoffLocation: _dropoffLocationController.text.trim(),
-      dropoffDate: _dropoffDateController.text.trim(),
+      dropoffDate: _dropoffDate,
       dropoffTime: _dropoffTimeController.text.trim(),
       drivers: _driversController.text.trim(),
       deposit: double.tryParse(_depositController.text.trim()) ?? 0,
@@ -167,13 +207,15 @@ class _AddEditCarHireScreenState extends ConsumerState<AddEditCarHireScreen> {
   }
 
   Widget _buildForm() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
-      child: Form(
-        key: _formKey,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
+    return Stack(
+      children: [
+        SingleChildScrollView(
+          padding: const EdgeInsets.all(20),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
             // Company
             Text('Company', style: AppTextStyles.label),
             const SizedBox(height: 6),
@@ -204,14 +246,24 @@ class _AddEditCarHireScreenState extends ConsumerState<AddEditCarHireScreen> {
             TextFormField(
               controller: _pickupDateController,
               decoration: InputDecoration(
-                hintText: 'YYYY-MM-DD',
+                hintText: 'DD/MM/YYYY',
                 suffixIcon: IconButton(
                   icon: const Icon(Icons.calendar_today_rounded, size: 20),
-                  onPressed: () => _pickDate(_pickupDateController),
+                  onPressed: () => _pickDate(
+                    controller: _pickupDateController,
+                    currentIsoDate: _pickupDate,
+                    onDatePicked: (iso) => _pickupDate = iso,
+                    defaultDate: _holidayStartDate,
+                  ),
                 ),
               ),
               readOnly: true,
-              onTap: () => _pickDate(_pickupDateController),
+              onTap: () => _pickDate(
+                controller: _pickupDateController,
+                currentIsoDate: _pickupDate,
+                onDatePicked: (iso) => _pickupDate = iso,
+                defaultDate: _holidayStartDate,
+              ),
             ),
             const SizedBox(height: 16),
 
@@ -242,14 +294,24 @@ class _AddEditCarHireScreenState extends ConsumerState<AddEditCarHireScreen> {
             TextFormField(
               controller: _dropoffDateController,
               decoration: InputDecoration(
-                hintText: 'YYYY-MM-DD',
+                hintText: 'DD/MM/YYYY',
                 suffixIcon: IconButton(
                   icon: const Icon(Icons.calendar_today_rounded, size: 20),
-                  onPressed: () => _pickDate(_dropoffDateController),
+                  onPressed: () => _pickDate(
+                    controller: _dropoffDateController,
+                    currentIsoDate: _dropoffDate,
+                    onDatePicked: (iso) => _dropoffDate = iso,
+                    defaultDate: _holidayEndDate,
+                  ),
                 ),
               ),
               readOnly: true,
-              onTap: () => _pickDate(_dropoffDateController),
+              onTap: () => _pickDate(
+                controller: _dropoffDateController,
+                currentIsoDate: _dropoffDate,
+                onDatePicked: (iso) => _dropoffDate = iso,
+                defaultDate: _holidayEndDate,
+              ),
             ),
             const SizedBox(height: 16),
 
@@ -328,37 +390,32 @@ class _AddEditCarHireScreenState extends ConsumerState<AddEditCarHireScreen> {
               parentId: _entityId,
             ),
 
-            const SizedBox(height: 24),
-
-            // Save button
-            SizedBox(
-              height: 50,
-              child: ElevatedButton(
-                onPressed: _saving ? null : _save,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                ),
-                child: _saving
-                    ? const SizedBox(
-                        width: 22,
-                        height: 22,
-                        child: CircularProgressIndicator(
-                            strokeWidth: 2, color: Colors.white),
-                      )
-                    : Text(
-                        _isEdit ? 'Update Car Hire' : 'Save Car Hire',
-                        style: AppTextStyles.buttonText,
-                      ),
-              ),
-            ),
             const SizedBox(height: 80),
           ],
         ),
       ),
+    ),
+    Positioned(
+      right: 16,
+      bottom: 16,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: AppColors.primaryLight.withValues(alpha: 0.7),
+          shape: BoxShape.circle,
+          boxShadow: const [
+            BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2)),
+          ],
+        ),
+        child: IconButton(
+          onPressed: _saving ? null : _save,
+          tooltip: _isEdit ? 'Save' : 'Add',
+          icon: const Icon(Icons.check_rounded, color: Colors.white, size: 22),
+          padding: const EdgeInsets.all(10),
+          constraints: const BoxConstraints(),
+        ),
+      ),
+    ),
+      ],
     );
   }
 }

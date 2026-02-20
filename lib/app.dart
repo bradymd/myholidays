@@ -43,13 +43,13 @@ final _router = GoRouter(
     ),
     GoRoute(
       path: '/holiday/:id',
-      builder: (context, state) => HolidayDetailScreen(
+      builder: (context, state) => HolidaySummaryScreen(
         holidayId: state.pathParameters['id']!,
       ),
     ),
     GoRoute(
-      path: '/holiday-summary/:id',
-      builder: (context, state) => HolidaySummaryScreen(
+      path: '/holiday-manage/:id',
+      builder: (context, state) => HolidayDetailScreen(
         holidayId: state.pathParameters['id']!,
       ),
     ),

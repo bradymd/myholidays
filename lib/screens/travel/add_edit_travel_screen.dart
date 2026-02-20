@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:my_holidays/constants/enums.dart';
 import 'package:my_holidays/models/travel_leg.dart';
+import 'package:my_holidays/providers/holiday_provider.dart';
 import 'package:my_holidays/providers/travel_provider.dart';
 import 'package:my_holidays/theme/app_colors.dart';
 import 'package:my_holidays/theme/app_text_styles.dart';
@@ -45,6 +46,32 @@ class _AddEditTravelScreenState extends ConsumerState<AddEditTravelScreen> {
   String _entityId = '';
   bool _loaded = false;
   bool _saving = false;
+  String _holidayStartDate = '';
+  String _departureDate = '';
+  String _arrivalDate = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadHolidayDates();
+  }
+
+  Future<void> _loadHolidayDates() async {
+    final holidays = await ref.read(holidaysProvider.future);
+    final holiday = holidays.where((h) => h.id == widget.holidayId).firstOrNull;
+    if (holiday != null && mounted) {
+      setState(() {
+        _holidayStartDate = holiday.startDate;
+      });
+    }
+  }
+
+  String _displayDate(String isoDate) {
+    if (isoDate.isEmpty) return '';
+    final date = DateTime.tryParse(isoDate);
+    if (date == null) return isoDate;
+    return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
+  }
 
   @override
   void dispose() {
@@ -82,9 +109,11 @@ class _AddEditTravelScreenState extends ConsumerState<AddEditTravelScreen> {
 
         _fromController.text = leg.from;
         _toController.text = leg.to;
-        _departureDateController.text = leg.departureDate;
+        _departureDate = leg.departureDate;
+        _departureDateController.text = _displayDate(leg.departureDate);
         _departureTimeController.text = leg.departureTime;
-        _arrivalDateController.text = leg.arrivalDate;
+        _arrivalDate = leg.arrivalDate;
+        _arrivalDateController.text = _displayDate(leg.arrivalDate);
         _arrivalTimeController.text = leg.arrivalTime;
         _carrierController.text = leg.carrier;
         _bookingRefController.text = leg.bookingReference;
@@ -98,18 +127,24 @@ class _AddEditTravelScreenState extends ConsumerState<AddEditTravelScreen> {
     }
   }
 
-  Future<void> _pickDate(TextEditingController controller) async {
-    final initial = DateTime.tryParse(controller.text) ?? DateTime.now();
+  Future<void> _pickDate(
+    TextEditingController controller, {
+    String? defaultDate,
+    required ValueChanged<String> onPicked,
+  }) async {
+    final initial = DateTime.tryParse(defaultDate ?? '') ?? DateTime.now();
     final picked = await showDatePicker(
       context: context,
       initialDate: initial,
       firstDate: DateTime(2020),
       lastDate: DateTime(2100),
+      locale: const Locale('en', 'GB'),
     );
     if (picked != null) {
-      controller.text =
+      final iso =
           '${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}';
-      setState(() {});
+      controller.text = _displayDate(iso);
+      setState(() => onPicked(iso));
     }
   }
 
@@ -124,9 +159,9 @@ class _AddEditTravelScreenState extends ConsumerState<AddEditTravelScreen> {
       mode: _mode.name,
       from: _fromController.text.trim(),
       to: _toController.text.trim(),
-      departureDate: _departureDateController.text.trim(),
+      departureDate: _departureDate,
       departureTime: _departureTimeController.text.trim(),
-      arrivalDate: _arrivalDateController.text.trim(),
+      arrivalDate: _arrivalDate,
       arrivalTime: _arrivalTimeController.text.trim(),
       carrier: _carrierController.text.trim(),
       bookingReference: _bookingRefController.text.trim(),
@@ -170,7 +205,9 @@ class _AddEditTravelScreenState extends ConsumerState<AddEditTravelScreen> {
   }
 
   Widget _buildForm() {
-    return SingleChildScrollView(
+    return Stack(
+      children: [
+        SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Form(
         key: _formKey,
@@ -239,14 +276,22 @@ class _AddEditTravelScreenState extends ConsumerState<AddEditTravelScreen> {
             TextFormField(
               controller: _departureDateController,
               decoration: InputDecoration(
-                hintText: 'YYYY-MM-DD',
+                hintText: 'DD/MM/YYYY',
                 suffixIcon: IconButton(
                   icon: const Icon(Icons.calendar_today_rounded, size: 20),
-                  onPressed: () => _pickDate(_departureDateController),
+                  onPressed: () => _pickDate(
+                    _departureDateController,
+                    defaultDate: _departureDate.isNotEmpty ? _departureDate : _holidayStartDate,
+                    onPicked: (iso) => _departureDate = iso,
+                  ),
                 ),
               ),
               readOnly: true,
-              onTap: () => _pickDate(_departureDateController),
+              onTap: () => _pickDate(
+                _departureDateController,
+                defaultDate: _departureDate.isNotEmpty ? _departureDate : _holidayStartDate,
+                onPicked: (iso) => _departureDate = iso,
+              ),
             ),
             const SizedBox(height: 16),
 
@@ -266,14 +311,45 @@ class _AddEditTravelScreenState extends ConsumerState<AddEditTravelScreen> {
             TextFormField(
               controller: _arrivalDateController,
               decoration: InputDecoration(
-                hintText: 'YYYY-MM-DD',
-                suffixIcon: IconButton(
-                  icon: const Icon(Icons.calendar_today_rounded, size: 20),
-                  onPressed: () => _pickDate(_arrivalDateController),
+                hintText: _arrivalDate.isEmpty ? 'Same as departure' : 'DD/MM/YYYY',
+                suffixIcon: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (_arrivalDate.isNotEmpty)
+                      IconButton(
+                        icon: const Icon(Icons.clear_rounded, size: 20),
+                        onPressed: () {
+                          setState(() {
+                            _arrivalDate = '';
+                            _arrivalDateController.clear();
+                          });
+                        },
+                      ),
+                    IconButton(
+                      icon: const Icon(Icons.calendar_today_rounded, size: 20),
+                      onPressed: () => _pickDate(
+                        _arrivalDateController,
+                        defaultDate: _arrivalDate.isNotEmpty
+                            ? _arrivalDate
+                            : _departureDate.isNotEmpty
+                                ? _departureDate
+                                : _holidayStartDate,
+                        onPicked: (iso) => _arrivalDate = iso,
+                      ),
+                    ),
+                  ],
                 ),
               ),
               readOnly: true,
-              onTap: () => _pickDate(_arrivalDateController),
+              onTap: () => _pickDate(
+                _arrivalDateController,
+                defaultDate: _arrivalDate.isNotEmpty
+                    ? _arrivalDate
+                    : _departureDate.isNotEmpty
+                        ? _departureDate
+                        : _holidayStartDate,
+                onPicked: (iso) => _arrivalDate = iso,
+              ),
             ),
             const SizedBox(height: 16),
 
@@ -338,37 +414,32 @@ class _AddEditTravelScreenState extends ConsumerState<AddEditTravelScreen> {
               parentId: _entityId,
             ),
 
-            const SizedBox(height: 24),
-
-            // Save button
-            SizedBox(
-              height: 50,
-              child: ElevatedButton(
-                onPressed: _saving ? null : _save,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                ),
-                child: _saving
-                    ? const SizedBox(
-                        width: 22,
-                        height: 22,
-                        child: CircularProgressIndicator(
-                            strokeWidth: 2, color: Colors.white),
-                      )
-                    : Text(
-                        _isEdit ? 'Update Travel' : 'Save Travel',
-                        style: AppTextStyles.buttonText,
-                      ),
-              ),
-            ),
             const SizedBox(height: 80),
           ],
         ),
       ),
+    ),
+        Positioned(
+          right: 16,
+          bottom: 16,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: AppColors.primaryLight.withValues(alpha: 0.7),
+              shape: BoxShape.circle,
+              boxShadow: const [
+                BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2)),
+              ],
+            ),
+            child: IconButton(
+              onPressed: _saving ? null : _save,
+              tooltip: _isEdit ? 'Save' : 'Add',
+              icon: const Icon(Icons.check_rounded, color: Colors.white, size: 22),
+              padding: const EdgeInsets.all(10),
+              constraints: const BoxConstraints(),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

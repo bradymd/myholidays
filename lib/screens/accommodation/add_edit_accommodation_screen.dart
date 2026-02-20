@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:my_holidays/models/accommodation.dart';
 import 'package:my_holidays/providers/accommodation_provider.dart';
+import 'package:my_holidays/providers/holiday_provider.dart';
 import 'package:my_holidays/theme/app_colors.dart';
 import 'package:my_holidays/theme/app_text_styles.dart';
 import 'package:my_holidays/utils/id_generator.dart';
@@ -44,12 +45,28 @@ class _AddEditAccommodationScreenState
   bool _didLoad = false;
   late String _accommodationId;
 
+  String _holidayStartDate = '';
+  String _holidayEndDate = '';
+
   bool get _isEditing => widget.editAccommodationId != null;
 
   @override
   void initState() {
     super.initState();
     _accommodationId = widget.editAccommodationId ?? generateId();
+    _loadHolidayDates();
+  }
+
+  Future<void> _loadHolidayDates() async {
+    final holidays = await ref.read(holidaysProvider.future);
+    final holiday =
+        holidays.where((h) => h.id == widget.holidayId).firstOrNull;
+    if (holiday != null && mounted) {
+      setState(() {
+        _holidayStartDate = holiday.startDate;
+        _holidayEndDate = holiday.endDate;
+      });
+    }
   }
 
   @override
@@ -90,13 +107,17 @@ class _AddEditAccommodationScreenState
   Future<void> _pickDate({
     required String current,
     required ValueChanged<String> onPicked,
+    String? defaultDate,
   }) async {
-    final initial = DateTime.tryParse(current) ?? DateTime.now();
+    final initial = DateTime.tryParse(current) ??
+        DateTime.tryParse(defaultDate ?? '') ??
+        DateTime.now();
     final picked = await showDatePicker(
       context: context,
       initialDate: initial,
       firstDate: DateTime(2020),
       lastDate: DateTime(2100),
+      locale: const Locale('en', 'GB'),
     );
     if (picked != null) {
       onPicked(DateFormat('yyyy-MM-dd').format(picked));
@@ -173,13 +194,15 @@ class _AddEditAccommodationScreenState
       body: accommodationsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('Error: $e')),
-        data: (_) => SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
+        data: (_) => Stack(
+          children: [
+            SingleChildScrollView(
+              padding: const EdgeInsets.all(20),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
                 Text(
                   _isEditing ? 'Edit Accommodation' : 'New Accommodation',
                   style: AppTextStyles.subheading,
@@ -224,6 +247,7 @@ class _AddEditAccommodationScreenState
                   onPick: () => _pickDate(
                     current: _checkIn,
                     onPicked: (v) => setState(() => _checkIn = v),
+                    defaultDate: _holidayStartDate,
                   ),
                   onClear: () => setState(() => _checkIn = ''),
                 ),
@@ -236,6 +260,7 @@ class _AddEditAccommodationScreenState
                   onPick: () => _pickDate(
                     current: _checkOut,
                     onPicked: (v) => setState(() => _checkOut = v),
+                    defaultDate: _holidayEndDate,
                   ),
                   onClear: () => setState(() => _checkOut = ''),
                 ),
@@ -336,35 +361,36 @@ class _AddEditAccommodationScreenState
                   parentId: _accommodationId,
                 ),
 
-                const SizedBox(height: 32),
-
-                // Save button
-                ElevatedButton(
-                  onPressed: _isLoading ? null : _save,
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                  ),
-                  child: _isLoading
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                      : Text(
-                          _isEditing
-                              ? 'Save Changes'
-                              : 'Add Accommodation',
-                          style: AppTextStyles.buttonText,
-                        ),
-                ),
-
                 const SizedBox(height: 80),
-              ],
+                  ],
+                ),
+              ),
             ),
-          ),
+            Positioned(
+              right: 16,
+              bottom: 16,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: AppColors.primaryLight.withValues(alpha: 0.7),
+                  shape: BoxShape.circle,
+                  boxShadow: const [
+                    BoxShadow(
+                        color: Colors.black12,
+                        blurRadius: 4,
+                        offset: Offset(0, 2)),
+                  ],
+                ),
+                child: IconButton(
+                  onPressed: _isLoading ? null : _save,
+                  tooltip: _isEditing ? 'Save' : 'Add',
+                  icon: const Icon(Icons.check_rounded,
+                      color: Colors.white, size: 22),
+                  padding: const EdgeInsets.all(10),
+                  constraints: const BoxConstraints(),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

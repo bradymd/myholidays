@@ -135,81 +135,93 @@ class _AddEditHolidayScreenState extends ConsumerState<AddEditHolidayScreen> {
   Widget build(BuildContext context) {
     return AppScaffold(
       title: isEditing ? 'Edit Holiday' : 'Add Holiday',
+      useOverlayNav: true,
       showBackButton: true,
-      showHolidayIcon: false,
-      body: Form(
-        key: _formKey,
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Card(
-            child: Padding(
+      body: Stack(
+        children: [
+          Form(
+            key: _formKey,
+            child: SingleChildScrollView(
               padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Name
-                  TextFormField(
-                    controller: _nameController,
-                    decoration:
-                        const InputDecoration(labelText: 'Holiday Name'),
-                    textCapitalization: TextCapitalization.words,
-                    validator: (v) =>
-                        v == null || v.trim().isEmpty ? 'Required' : null,
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Start date
-                  _DateField(
-                    label: 'Start Date',
-                    value: _formatForDisplay(_startDate),
-                    onTap: () => _pickDate(isStart: true),
-                    onClear: _startDate.isNotEmpty
-                        ? () => setState(() => _startDate = '')
-                        : null,
-                  ),
-                  const SizedBox(height: 16),
-
-                  // End date
-                  _DateField(
-                    label: 'End Date',
-                    value: _formatForDisplay(_endDate),
-                    onTap: () => _pickDate(isStart: false),
-                    onClear: _endDate.isNotEmpty
-                        ? () => setState(() => _endDate = '')
-                        : null,
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Notes
-                  TextFormField(
-                    controller: _notesController,
-                    decoration: const InputDecoration(
-                      labelText: 'Notes',
-                      alignLabelWithHint: true,
-                    ),
-                    maxLines: 4,
-                    minLines: 2,
-                    textCapitalization: TextCapitalization.sentences,
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Save button
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: _save,
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
+              child: Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Name
+                      TextFormField(
+                        controller: _nameController,
+                        decoration:
+                            const InputDecoration(labelText: 'Holiday Name'),
+                        textCapitalization: TextCapitalization.words,
+                        validator: (v) =>
+                            v == null || v.trim().isEmpty ? 'Required' : null,
                       ),
-                      child: Text(
-                          isEditing ? 'Save Changes' : 'Create Holiday'),
-                    ),
+                      const SizedBox(height: 16),
+
+                      // Start date
+                      _DateField(
+                        label: 'Start Date',
+                        value: _formatForDisplay(_startDate),
+                        onTap: () => _pickDate(isStart: true),
+                        onClear: _startDate.isNotEmpty
+                            ? () => setState(() => _startDate = '')
+                            : null,
+                      ),
+                      const SizedBox(height: 16),
+
+                      // End date
+                      _DateField(
+                        label: 'End Date',
+                        value: _formatForDisplay(_endDate),
+                        onTap: () => _pickDate(isStart: false),
+                        onClear: _endDate.isNotEmpty
+                            ? () => setState(() => _endDate = '')
+                            : null,
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Notes
+                      TextFormField(
+                        controller: _notesController,
+                        decoration: const InputDecoration(
+                          labelText: 'Notes',
+                          alignLabelWithHint: true,
+                        ),
+                        maxLines: 4,
+                        minLines: 2,
+                        textCapitalization: TextCapitalization.sentences,
+                      ),
+
+                      const SizedBox(height: 80),
+                    ],
                   ),
-                ],
+                ),
               ),
             ),
           ),
-        ),
+          Positioned(
+            right: 16,
+            bottom: 16,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: AppColors.primaryLight.withValues(alpha: 0.7),
+                shape: BoxShape.circle,
+                boxShadow: const [
+                  BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2)),
+                ],
+              ),
+              child: IconButton(
+                onPressed: _save,
+                tooltip: isEditing ? 'Save' : 'Add',
+                icon: const Icon(Icons.check_rounded, color: Colors.white, size: 22),
+                padding: const EdgeInsets.all(10),
+                constraints: const BoxConstraints(),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

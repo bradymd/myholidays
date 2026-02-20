@@ -1,23 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:my_holidays/models/holiday_plan.dart';
+import 'package:my_holidays/providers/traveler_provider.dart';
 import 'package:my_holidays/theme/app_colors.dart';
 import 'package:my_holidays/theme/app_text_styles.dart';
 import 'package:my_holidays/utils/date_helpers.dart';
 
-class HolidayCard extends StatelessWidget {
+class HolidayCard extends ConsumerWidget {
   const HolidayCard({
     super.key,
     required this.holiday,
     required this.onTap,
-    this.travelerCount = 0,
   });
 
   final HolidayPlan holiday;
   final VoidCallback onTap;
-  final int travelerCount;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final travelerCount =
+        ref.watch(travelersProvider(holiday.id)).valueOrNull?.length ?? 0;
     final daysAway = daysUntil(holiday.startDate);
     final isPast = isPastDate(holiday.endDate.isNotEmpty ? holiday.endDate : holiday.startDate);
 
