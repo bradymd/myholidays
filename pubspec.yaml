@@ -1,7 +1,7 @@
 name: my_holidays
 description: "MyHolidays - Holiday & vacation planner"
 publish_to: 'none'
-version: 1.0.0+5
+version: 1.0.1+7
 
 environment:
   sdk: ^3.10.8
@@ -53,4 +53,5 @@ flutter:
 
   assets:
     - assets/images/holiday-icon.png
+    - assets/images/holiday-watermark.png
     - assets/icons/

@@ -44,7 +44,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     child: Opacity(
                       opacity: 0.12,
                       child: Image.asset(
-                        'assets/images/holiday-icon.png',
+                        'assets/images/holiday-watermark.png',
                         width: MediaQuery.of(context).size.width * 0.85,
                         fit: BoxFit.contain,
                       ),
