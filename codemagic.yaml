@@ -1,0 +1,92 @@
+# codemagic.yaml — MyHolidays Flutter iOS CI/CD
+# Builds the iOS app and publishes to TestFlight via App Store Connect.
+#
+# Required environment variables (configure in Codemagic dashboard):
+#   APP_STORE_CONNECT_ISSUER_ID    — Issuer ID from App Store Connect > Keys
+#   APP_STORE_CONNECT_KEY_IDENTIFIER — Key ID of your API key
+#   APP_STORE_CONNECT_PRIVATE_KEY  — Contents of the .p8 private key file
+#   CERTIFICATE_PRIVATE_KEY        — Private key used to generate the certificate
+#   APP_APPLE_ID                   — Your app's Apple ID (numeric, from App Store Connect)
+
+workflows:
+  ios-release:
+    name: iOS Release
+    instance_type: mac_mini_m2
+    max_build_duration: 120
+    integrations:
+      app_store_connect: codemagic
+
+    environment:
+      flutter: stable
+      xcode: latest
+      cocoapods: default
+      groups:
+        - app_store_credentials
+      vars:
+        BUNDLE_ID: "com.bradymd.myHolidays"
+
+    triggering:
+      events: []
+
+    scripts:
+      # ── Code signing ──────────────────────────────────────────────
+      - name: Set up code signing
+        script: |
+          # Fetch or create provisioning profile + certificate
+          app-store-connect fetch-signing-files "com.bradymd.myHolidays" \
+            --type IOS_APP_STORE \
+            --certificate-key=@env:CERTIFICATE_PRIVATE_KEY \
+            --create
+
+          # Set up keychain with the certificates
+          keychain initialize
+          app-store-connect certificates list \
+            --type IOS_DISTRIBUTION \
+            --certificate-key=@env:CERTIFICATE_PRIVATE_KEY \
+            --save
+          keychain add-certificates
+          xcode-project use-profiles
+
+      # ── Dependencies ──────────────────────────────────────────────
+      - name: Get Flutter packages
+        script: |
+          flutter packages pub get
+
+      - name: Install CocoaPods
+        script: |
+          find . -name "Podfile" -execdir pod install \;
+
+      # ── Quality checks ────────────────────────────────────────────
+      - name: Flutter analyze
+        script: |
+          flutter analyze
+
+      # ── Build ─────────────────────────────────────────────────────
+      - name: Build IPA
+        script: |
+          BUILD_NUMBER=$(date +%s)
+          echo "Using build number: $BUILD_NUMBER"
+          flutter build ipa --release \
+            --build-name=1.0.0 \
+            --build-number=$BUILD_NUMBER \
+            --export-options-plist=/Users/builder/export_options.plist
+
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+      - flutter_drive.log
+
+    publishing:
+      email:
+        recipients:
+          - brady@bradymd.com
+        notify:
+          success: true
+          failure: true
+
+      app_store_connect:
+        auth: integration
+        apple_id: $APP_APPLE_ID
+        submit_to_testflight: true
+        expire_build_submitted_for_review: true
+        submit_to_app_store: false

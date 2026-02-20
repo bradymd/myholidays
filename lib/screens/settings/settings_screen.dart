@@ -141,7 +141,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       if (!mounted) return;
 
       if (success) {
-        // Invalidate all providers to reload from the restored DB
+        // Close the old DB connection and reload all providers
+        ref.invalidate(databaseProvider);
         ref.invalidate(holidaysProvider);
         ref.invalidate(documentsProvider);
         ref.invalidate(settingsProvider);
@@ -218,6 +219,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       if (!mounted) return;
 
       if (success) {
+        ref.invalidate(databaseProvider);
         ref.invalidate(holidaysProvider);
         ref.invalidate(documentsProvider);
         ref.invalidate(settingsProvider);
