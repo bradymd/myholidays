@@ -20,6 +20,8 @@ class HolidayPlans extends Table {
   TextColumn get startDate => text().withDefault(const Constant(''))();
   TextColumn get endDate => text().withDefault(const Constant(''))();
   TextColumn get notes => text().withDefault(const Constant(''))();
+  TextColumn get colour => text().withDefault(const Constant(''))();
+  TextColumn get icon => text().withDefault(const Constant(''))();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -168,7 +170,23 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(openConnection());
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 3;
+
+  @override
+  MigrationStrategy get migration => MigrationStrategy(
+        onUpgrade: (migrator, from, to) async {
+          if (from < 2) {
+            await customStatement(
+              "ALTER TABLE holiday_plans ADD COLUMN colour TEXT NOT NULL DEFAULT ''",
+            );
+          }
+          if (from < 3) {
+            await customStatement(
+              "ALTER TABLE holiday_plans ADD COLUMN icon TEXT NOT NULL DEFAULT ''",
+            );
+          }
+        },
+      );
 
   // --- Holiday operations ---
 
@@ -194,6 +212,8 @@ class AppDatabase extends _$AppDatabase {
         startDate: Value(h.startDate),
         endDate: Value(h.endDate),
         notes: Value(h.notes),
+        colour: Value(h.colour),
+        icon: Value(h.icon),
       ),
     );
   }
@@ -466,6 +486,8 @@ class AppDatabase extends _$AppDatabase {
         startDate: r.startDate,
         endDate: r.endDate,
         notes: r.notes,
+        colour: r.colour,
+        icon: r.icon,
       );
 
   models.Traveler _travelerFromRow(TravelerRow r) => models.Traveler(

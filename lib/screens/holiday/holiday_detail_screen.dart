@@ -4,12 +4,12 @@ import 'package:go_router/go_router.dart';
 import 'package:my_holidays/models/accommodation.dart';
 import 'package:my_holidays/models/activity.dart';
 import 'package:my_holidays/models/car_hire.dart';
-import 'package:my_holidays/models/document_ref.dart';
 import 'package:my_holidays/models/travel_leg.dart';
 import 'package:my_holidays/providers/accommodation_provider.dart';
 import 'package:my_holidays/providers/activity_provider.dart';
 import 'package:my_holidays/providers/car_hire_provider.dart';
 import 'package:my_holidays/providers/database_provider.dart';
+import 'package:my_holidays/providers/document_provider.dart';
 import 'package:my_holidays/providers/holiday_provider.dart';
 import 'package:my_holidays/providers/itinerary_provider.dart';
 import 'package:my_holidays/providers/travel_provider.dart';
@@ -18,7 +18,9 @@ import 'package:my_holidays/theme/app_colors.dart';
 import 'package:my_holidays/theme/app_text_styles.dart';
 import 'package:my_holidays/utils/currency_helpers.dart';
 import 'package:my_holidays/utils/date_helpers.dart';
+import 'package:my_holidays/models/document_ref.dart';
 import 'package:my_holidays/widgets/app_scaffold.dart';
+import 'package:my_holidays/widgets/doc_count_badge.dart';
 
 class HolidayDetailScreen extends ConsumerStatefulWidget {
   const HolidayDetailScreen({super.key, required this.holidayId});
@@ -31,8 +33,6 @@ class HolidayDetailScreen extends ConsumerStatefulWidget {
 }
 
 class _HolidayDetailScreenState extends ConsumerState<HolidayDetailScreen> {
-  List<DocumentRef> _documents = [];
-
   static const _allSections = [
     'travelers',
     'accommodation',
@@ -49,7 +49,6 @@ class _HolidayDetailScreenState extends ConsumerState<HolidayDetailScreen> {
   @override
   void initState() {
     super.initState();
-    _loadDocuments();
     _loadSectionPrefs();
   }
 
@@ -79,19 +78,6 @@ class _HolidayDetailScreenState extends ConsumerState<HolidayDetailScreen> {
       'holiday_sections_${widget.holidayId}',
       updated.join(','),
     );
-  }
-
-  Future<void> _loadDocuments() async {
-    final db = ref.read(databaseProvider);
-    final docs = await db.getDocuments(
-      parentType: 'holiday',
-      parentId: widget.holidayId,
-    );
-    if (mounted) {
-      setState(() {
-        _documents = docs;
-      });
-    }
   }
 
   double _totalCost(
@@ -214,8 +200,25 @@ class _HolidayDetailScreenState extends ConsumerState<HolidayDetailScreen> {
     final itineraryDays =
         ref.watch(itineraryDaysProvider(hId)).valueOrNull ?? [];
 
-    // Reload documents when returning to screen
-    ref.listen(holidaysProvider, (prev, next) => _loadDocuments());
+    // Watch all documents and compute per-entity counts
+    final allDocs = ref.watch(documentsProvider).valueOrNull ?? [];
+    final allParentIds = <String>{
+      hId,
+      ...accommodations.map((a) => a.id),
+      ...travelLegs.map((l) => l.id),
+      ...carHires.map((c) => c.id),
+      ...activities.map((a) => a.id),
+      ...travelers.map((t) => t.id),
+      ...itineraryDays.map((d) => d.id),
+    };
+    final holidayDocs =
+        allDocs.where((d) => allParentIds.contains(d.parentId)).toList();
+    final docsById = <String, List<DocumentRef>>{};
+    for (final doc in holidayDocs) {
+      docsById.putIfAbsent(doc.parentId, () => []).add(doc);
+    }
+    final holidayLevelDocs =
+        holidayDocs.where((d) => d.parentId == hId).toList();
 
     final totalCost = _totalCost(
       accommodations,
@@ -232,6 +235,9 @@ class _HolidayDetailScreenState extends ConsumerState<HolidayDetailScreen> {
         final holiday = holidays
             .where((h) => h.id == widget.holidayId)
             .firstOrNull;
+        final holidayColour = holiday != null
+            ? AppColors.holidayColour(holiday.colour)
+            : AppColors.primary;
         if (holiday == null) {
           return AppScaffold(
             title: '',
@@ -268,7 +274,7 @@ class _HolidayDetailScreenState extends ConsumerState<HolidayDetailScreen> {
                       gradient: LinearGradient(
                         colors: [
                           Colors.white,
-                          AppColors.primary.withValues(alpha: 0.06),
+                          holidayColour.withValues(alpha: 0.06),
                         ],
                         begin: Alignment.centerLeft,
                         end: Alignment.centerRight,
@@ -288,39 +294,47 @@ class _HolidayDetailScreenState extends ConsumerState<HolidayDetailScreen> {
                           children: [
                             Row(
                               children: [
-                                Container(
-                                  padding: const EdgeInsets.all(8),
-                                  decoration: BoxDecoration(
-                                    gradient: LinearGradient(
-                                      colors: [
-                                        AppColors.primary.withValues(
-                                          alpha: 0.15,
-                                        ),
-                                        AppColors.primary.withValues(
-                                          alpha: 0.08,
+                                if (holiday.icon.isNotEmpty)
+                                  Container(
+                                    width: 56,
+                                    height: 56,
+                                    decoration: BoxDecoration(
+                                      gradient: LinearGradient(
+                                        colors: [
+                                          holidayColour.withValues(
+                                            alpha: 0.15,
+                                          ),
+                                          holidayColour.withValues(
+                                            alpha: 0.08,
+                                          ),
+                                        ],
+                                        begin: Alignment.topLeft,
+                                        end: Alignment.bottomRight,
+                                      ),
+                                      borderRadius: BorderRadius.circular(14),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: holidayColour.withValues(
+                                            alpha: 0.15,
+                                          ),
+                                          blurRadius: 8,
+                                          offset: const Offset(0, 2),
                                         ),
                                       ],
-                                      begin: Alignment.topLeft,
-                                      end: Alignment.bottomRight,
                                     ),
-                                    shape: BoxShape.circle,
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: AppColors.primary.withValues(
-                                          alpha: 0.15,
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(12),
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(4),
+                                        child: Image.asset(
+                                          AppColors.holidayIconAsset(holiday.icon),
+                                          fit: BoxFit.contain,
                                         ),
-                                        blurRadius: 8,
-                                        offset: const Offset(0, 2),
                                       ),
-                                    ],
+                                    ),
                                   ),
-                                  child: const Icon(
-                                    Icons.flight_takeoff_rounded,
-                                    color: AppColors.primary,
-                                    size: 20,
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
+                                if (holiday.icon.isNotEmpty)
+                                  const SizedBox(width: 12),
                                 Expanded(
                                   child: Column(
                                     crossAxisAlignment:
@@ -456,6 +470,9 @@ class _HolidayDetailScreenState extends ConsumerState<HolidayDetailScreen> {
                     children: travelers
                         .map((t) => t.name.isNotEmpty ? t.name : 'Unnamed')
                         .toList(),
+                    childDocs: travelers
+                        .map((t) => docsById[t.id] ?? <DocumentRef>[])
+                        .toList(),
                   ),
                 if (_enabledSections.contains('accommodation'))
                   _SectionPanel(
@@ -467,6 +484,9 @@ class _HolidayDetailScreenState extends ConsumerState<HolidayDetailScreen> {
                         context.push('/accommodations/${widget.holidayId}'),
                     children: accommodations
                         .map((a) => a.name.isNotEmpty ? a.name : 'Unnamed')
+                        .toList(),
+                    childDocs: accommodations
+                        .map((a) => docsById[a.id] ?? <DocumentRef>[])
                         .toList(),
                   ),
                 if (_enabledSections.contains('travel'))
@@ -480,9 +500,12 @@ class _HolidayDetailScreenState extends ConsumerState<HolidayDetailScreen> {
                       final route = [
                         if (t.from.isNotEmpty) t.from,
                         if (t.to.isNotEmpty) t.to,
-                      ].join(' → ');
+                      ].join(' \u2192 ');
                       return route.isNotEmpty ? route : 'Unnamed';
                     }).toList(),
+                    childDocs: travelLegs
+                        .map((t) => docsById[t.id] ?? <DocumentRef>[])
+                        .toList(),
                   ),
                 if (_enabledSections.contains('car_hire'))
                   _SectionPanel(
@@ -496,6 +519,9 @@ class _HolidayDetailScreenState extends ConsumerState<HolidayDetailScreen> {
                           (c) => c.company.isNotEmpty ? c.company : 'Unnamed',
                         )
                         .toList(),
+                    childDocs: carHires
+                        .map((c) => docsById[c.id] ?? <DocumentRef>[])
+                        .toList(),
                   ),
                 if (_enabledSections.contains('activities'))
                   _SectionPanel(
@@ -507,6 +533,9 @@ class _HolidayDetailScreenState extends ConsumerState<HolidayDetailScreen> {
                         context.push('/activities/${widget.holidayId}'),
                     children: activities
                         .map((a) => a.name.isNotEmpty ? a.name : 'Unnamed')
+                        .toList(),
+                    childDocs: activities
+                        .map((a) => docsById[a.id] ?? <DocumentRef>[])
                         .toList(),
                   ),
                 if (_enabledSections.contains('itinerary'))
@@ -523,16 +552,19 @@ class _HolidayDetailScreenState extends ConsumerState<HolidayDetailScreen> {
                               : 'Day ${d.dayNumber}',
                         )
                         .toList(),
+                    childDocs: itineraryDays
+                        .map((d) => docsById[d.id] ?? <DocumentRef>[])
+                        .toList(),
                   ),
                 if (_enabledSections.contains('documents'))
                   _SectionPanel(
                     icon: Icons.attach_file_rounded,
                     iconColor: const Color(0xFF5D4037),
                     title: 'Documents',
-                    count: _documents.length,
+                    count: holidayLevelDocs.length,
                     onTap: () =>
                         context.push('/documents/holiday/${widget.holidayId}'),
-                    children: _documents
+                    children: holidayLevelDocs
                         .map(
                           (d) => d.filename.isNotEmpty ? d.filename : 'Unnamed',
                         )
@@ -543,7 +575,7 @@ class _HolidayDetailScreenState extends ConsumerState<HolidayDetailScreen> {
                 // Total cost summary
                 if (totalCost > 0)
                   Card(
-                    color: AppColors.softPurple,
+                    color: holidayColour.withValues(alpha: 0.08),
                     child: Padding(
                       padding: const EdgeInsets.all(16),
                       child: Row(
@@ -551,12 +583,12 @@ class _HolidayDetailScreenState extends ConsumerState<HolidayDetailScreen> {
                           Container(
                             padding: const EdgeInsets.all(10),
                             decoration: BoxDecoration(
-                              color: AppColors.primary.withValues(alpha: 0.15),
+                              color: holidayColour.withValues(alpha: 0.15),
                               shape: BoxShape.circle,
                             ),
-                            child: const Icon(
+                            child: Icon(
                               Icons.account_balance_wallet_rounded,
-                              color: AppColors.primary,
+                              color: holidayColour,
                               size: 24,
                             ),
                           ),
@@ -575,7 +607,7 @@ class _HolidayDetailScreenState extends ConsumerState<HolidayDetailScreen> {
                                 Text(
                                   formatGBP(totalCost),
                                   style: AppTextStyles.heading.copyWith(
-                                    color: AppColors.primary,
+                                    color: holidayColour,
                                     fontSize: 22,
                                   ),
                                 ),
@@ -669,6 +701,7 @@ class _SectionPanel extends StatelessWidget {
     required this.count,
     required this.onTap,
     required this.children,
+    this.childDocs = const [],
   });
 
   final IconData icon;
@@ -677,6 +710,7 @@ class _SectionPanel extends StatelessWidget {
   final int count;
   final VoidCallback onTap;
   final List<String> children;
+  final List<List<DocumentRef>> childDocs;
 
   @override
   Widget build(BuildContext context) {
@@ -755,30 +789,46 @@ class _SectionPanel extends StatelessWidget {
                 ),
                 if (children.isNotEmpty) ...[
                   const SizedBox(height: 10),
-                  ...children.map(
-                    (item) => Padding(
+                  ...List.generate(children.length, (i) {
+                    final item = children[i];
+                    final docs = i < childDocs.length
+                        ? childDocs[i]
+                        : <DocumentRef>[];
+                    return Padding(
                       padding: const EdgeInsets.only(left: 48, bottom: 4),
-                      child: Row(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Icon(
-                            Icons.circle,
-                            size: 5,
-                            color: AppColors.textMuted,
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              item,
-                              style: AppTextStyles.body.copyWith(
-                                color: AppColors.textSecondary,
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.circle,
+                                size: 5,
+                                color: AppColors.textMuted,
                               ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  item,
+                                  style: AppTextStyles.body.copyWith(
+                                    color: AppColors.textSecondary,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
                           ),
+                          if (docs.isNotEmpty) ...[
+                            const SizedBox(height: 4),
+                            Padding(
+                              padding: const EdgeInsets.only(left: 13),
+                              child: DocChips(documents: docs),
+                            ),
+                          ],
                         ],
                       ),
-                    ),
-                  ),
+                    );
+                  }),
                 ],
               ],
             ),

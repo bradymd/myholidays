@@ -59,10 +59,23 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               }
 
               // Search filter
-              final filtered = _searchQuery.isEmpty
+              final searched = _searchQuery.isEmpty
                   ? holidays
                   : holidays.where((h) =>
                       h.name.toLowerCase().contains(_searchQuery.toLowerCase())).toList();
+
+              // Sort: upcoming holidays first (nearest date at top),
+              // then past holidays (most recent first)
+              final today = DateTime.now().toIso8601String().substring(0, 10);
+              final upcoming = searched
+                  .where((h) => h.startDate.isEmpty || h.startDate.compareTo(today) >= 0)
+                  .toList()
+                ..sort((a, b) => a.startDate.compareTo(b.startDate));
+              final past = searched
+                  .where((h) => h.startDate.isNotEmpty && h.startDate.compareTo(today) < 0)
+                  .toList()
+                ..sort((a, b) => b.startDate.compareTo(a.startDate));
+              final filtered = [...upcoming, ...past];
 
               return ListView(
                 padding: const EdgeInsets.all(16),

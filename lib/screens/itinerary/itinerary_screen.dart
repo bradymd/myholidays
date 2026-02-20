@@ -2,11 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:my_holidays/models/itinerary_day.dart';
+import 'package:my_holidays/providers/document_provider.dart';
 import 'package:my_holidays/providers/itinerary_provider.dart';
 import 'package:my_holidays/theme/app_colors.dart';
 import 'package:my_holidays/theme/app_text_styles.dart';
 import 'package:my_holidays/utils/date_helpers.dart';
 import 'package:my_holidays/widgets/app_scaffold.dart';
+import 'package:my_holidays/models/document_ref.dart';
+import 'package:my_holidays/widgets/doc_count_badge.dart';
 import 'package:my_holidays/widgets/empty_state.dart';
 
 class ItineraryScreen extends ConsumerWidget {
@@ -17,6 +20,7 @@ class ItineraryScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final daysAsync = ref.watch(itineraryDaysProvider(holidayId));
+    final allDocs = ref.watch(documentsProvider).valueOrNull ?? [];
 
     return AppScaffold(
       useOverlayNav: true,
@@ -53,9 +57,13 @@ class ItineraryScreen extends ConsumerWidget {
             itemCount: sorted.length,
             itemBuilder: (context, index) {
               final day = sorted[index];
+              final docs = allDocs
+                  .where((d) => d.parentId == day.id)
+                  .toList();
               return _DayCard(
                 day: day,
                 holidayId: holidayId,
+                documents: docs,
                 onEdit: () =>
                     context.push('/edit-itinerary-day/$holidayId/${day.id}'),
                 onDelete: () => _confirmDelete(context, ref, day),
@@ -102,12 +110,14 @@ class _DayCard extends StatelessWidget {
     required this.holidayId,
     required this.onEdit,
     required this.onDelete,
+    this.documents = const [],
   });
 
   final ItineraryDay day;
   final String holidayId;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
+  final List<DocumentRef> documents;
 
   @override
   Widget build(BuildContext context) {
@@ -199,6 +209,10 @@ class _DayCard extends StatelessWidget {
                     maxLines: 3,
                     overflow: TextOverflow.ellipsis,
                   ),
+                ],
+                if (documents.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  DocChips(documents: documents),
                 ],
               ],
             ),

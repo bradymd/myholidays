@@ -3,12 +3,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:my_holidays/constants/enums.dart';
 import 'package:my_holidays/models/travel_leg.dart';
+import 'package:my_holidays/providers/document_provider.dart';
 import 'package:my_holidays/providers/travel_provider.dart';
 import 'package:my_holidays/theme/app_colors.dart';
 import 'package:my_holidays/theme/app_text_styles.dart';
 import 'package:my_holidays/utils/currency_helpers.dart';
 import 'package:my_holidays/utils/date_helpers.dart';
 import 'package:my_holidays/widgets/app_scaffold.dart';
+import 'package:my_holidays/models/document_ref.dart';
+import 'package:my_holidays/widgets/doc_count_badge.dart';
 import 'package:my_holidays/widgets/empty_state.dart';
 
 class TravelScreen extends ConsumerWidget {
@@ -19,6 +22,7 @@ class TravelScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final travelAsync = ref.watch(travelLegsProvider(holidayId));
+    final allDocs = ref.watch(documentsProvider).valueOrNull ?? [];
 
     return AppScaffold(
       title: 'Travel',
@@ -44,10 +48,15 @@ class TravelScreen extends ConsumerWidget {
             itemCount: legs.length + 1,
             itemBuilder: (context, index) {
               if (index == legs.length) return const SizedBox(height: 80);
+              final leg = legs[index];
+              final docs = allDocs
+                  .where((d) => d.parentId == leg.id)
+                  .toList();
               return _TravelLegCard(
-                leg: legs[index],
+                leg: leg,
                 holidayId: holidayId,
-                onDelete: () => _confirmDelete(context, ref, legs[index]),
+                documents: docs,
+                onDelete: () => _confirmDelete(context, ref, leg),
               );
             },
           );
@@ -90,11 +99,13 @@ class _TravelLegCard extends StatelessWidget {
     required this.leg,
     required this.holidayId,
     required this.onDelete,
+    this.documents = const [],
   });
 
   final TravelLeg leg;
   final String holidayId;
   final VoidCallback onDelete;
+  final List<DocumentRef> documents;
 
   IconData _modeIcon(String mode) {
     return switch (mode) {
@@ -253,6 +264,12 @@ class _TravelLegCard extends StatelessWidget {
                   ],
                 ),
               const SizedBox(height: 8),
+
+              // Documents
+              if (documents.isNotEmpty) ...[
+                DocChips(documents: documents),
+                const SizedBox(height: 8),
+              ],
 
               // Carrier, booking ref, cost
               Wrap(

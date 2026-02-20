@@ -3,11 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:my_holidays/models/activity.dart';
 import 'package:my_holidays/providers/activity_provider.dart';
+import 'package:my_holidays/providers/document_provider.dart';
 import 'package:my_holidays/theme/app_colors.dart';
 import 'package:my_holidays/theme/app_text_styles.dart';
 import 'package:my_holidays/utils/currency_helpers.dart';
 import 'package:my_holidays/utils/date_helpers.dart';
 import 'package:my_holidays/widgets/app_scaffold.dart';
+import 'package:my_holidays/models/document_ref.dart';
+import 'package:my_holidays/widgets/doc_count_badge.dart';
 import 'package:my_holidays/widgets/empty_state.dart';
 
 class ActivitiesScreen extends ConsumerWidget {
@@ -18,6 +21,7 @@ class ActivitiesScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final activitiesAsync = ref.watch(activitiesProvider(holidayId));
+    final allDocs = ref.watch(documentsProvider).valueOrNull ?? [];
 
     return AppScaffold(
       title: 'Activities',
@@ -45,10 +49,15 @@ class ActivitiesScreen extends ConsumerWidget {
               if (index == activities.length) {
                 return const SizedBox(height: 80);
               }
+              final activity = activities[index];
+              final docs = allDocs
+                  .where((d) => d.parentId == activity.id)
+                  .toList();
               return _ActivityCard(
-                activity: activities[index],
+                activity: activity,
                 holidayId: holidayId,
-                onDelete: () => _confirmDelete(context, ref, activities[index]),
+                documents: docs,
+                onDelete: () => _confirmDelete(context, ref, activity),
               );
             },
           );
@@ -93,11 +102,13 @@ class _ActivityCard extends StatelessWidget {
     required this.activity,
     required this.holidayId,
     required this.onDelete,
+    this.documents = const [],
   });
 
   final Activity activity;
   final String holidayId;
   final VoidCallback onDelete;
+  final List<DocumentRef> documents;
 
   @override
   Widget build(BuildContext context) {
@@ -206,6 +217,12 @@ class _ActivityCard extends StatelessWidget {
                   ],
                 ),
               if (activity.date.isNotEmpty) const SizedBox(height: 8),
+
+              // Documents
+              if (documents.isNotEmpty) ...[
+                DocChips(documents: documents),
+                const SizedBox(height: 8),
+              ],
 
               // Info chips
               Wrap(

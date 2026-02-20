@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -9,6 +11,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:my_holidays/models/accommodation.dart';
 import 'package:my_holidays/models/activity.dart';
 import 'package:my_holidays/models/car_hire.dart';
+import 'package:my_holidays/models/document_ref.dart';
 import 'package:my_holidays/models/holiday_plan.dart';
 import 'package:my_holidays/models/itinerary_day.dart';
 import 'package:my_holidays/models/travel_leg.dart';
@@ -16,10 +19,12 @@ import 'package:my_holidays/models/traveler.dart';
 import 'package:my_holidays/providers/accommodation_provider.dart';
 import 'package:my_holidays/providers/activity_provider.dart';
 import 'package:my_holidays/providers/car_hire_provider.dart';
+import 'package:my_holidays/providers/document_provider.dart';
 import 'package:my_holidays/providers/holiday_provider.dart';
 import 'package:my_holidays/providers/itinerary_provider.dart';
 import 'package:my_holidays/providers/travel_provider.dart';
 import 'package:my_holidays/providers/traveler_provider.dart';
+import 'package:my_holidays/services/document_service.dart';
 import 'package:my_holidays/theme/app_colors.dart';
 import 'package:my_holidays/theme/app_text_styles.dart';
 import 'package:my_holidays/utils/currency_helpers.dart';
@@ -45,6 +50,7 @@ class _HolidaySummaryScreenState extends ConsumerState<HolidaySummaryScreen> {
   List<CarHire> _carHires = [];
   List<Activity> _activities = [];
   List<ItineraryDay> _itineraryDays = [];
+  List<DocumentRef> _documents = [];
 
   // --- Build the plain-text summary ---
 
@@ -224,6 +230,24 @@ class _HolidaySummaryScreenState extends ConsumerState<HolidaySummaryScreen> {
         }
         buf.writeln();
       }
+    }
+
+    // Documents
+    if (_documents.isNotEmpty) {
+      buf.writeln('DOCUMENTS');
+      buf.writeln('-'.padRight(30, '-'));
+      final grouped = <String, List<DocumentRef>>{};
+      for (final doc in _documents) {
+        grouped.putIfAbsent(doc.parentType, () => []).add(doc);
+      }
+      for (final entry in grouped.entries) {
+        buf.writeln('  ${_parentTypeLabel(entry.key)}:');
+        for (final doc in entry.value) {
+          final parentName = _resolveParentName(doc);
+          buf.writeln('    - ${doc.filename} ($parentName)');
+        }
+      }
+      buf.writeln();
     }
 
     // Financial summary
@@ -542,6 +566,50 @@ class _HolidaySummaryScreenState extends ConsumerState<HolidaySummaryScreen> {
           }
         }
 
+        // Documents
+        if (_documents.isNotEmpty) {
+          content.add(pdfSectionHeader('Documents'));
+          final grouped = <String, List<DocumentRef>>{};
+          for (final doc in _documents) {
+            grouped.putIfAbsent(doc.parentType, () => []).add(doc);
+          }
+          for (final entry in grouped.entries) {
+            final typeLabel = _parentTypeLabel(entry.key);
+            content.add(
+              pw.Padding(
+                padding: const pw.EdgeInsets.only(bottom: 4, top: 4),
+                child: pw.Text(
+                  typeLabel,
+                  style: pw.TextStyle(
+                    fontSize: 11,
+                    fontWeight: pw.FontWeight.bold,
+                    color: PdfColors.grey800,
+                  ),
+                ),
+              ),
+            );
+            for (final doc in entry.value) {
+              final parentName = _resolveParentName(doc);
+              content.add(
+                pw.Padding(
+                  padding: const pw.EdgeInsets.only(left: 8, bottom: 2),
+                  child: pw.Row(
+                    children: [
+                      pw.Text('\u2022 ', style: valueStyle),
+                      pw.Expanded(
+                        child: pw.Text(
+                          '${doc.filename}  ($parentName)',
+                          style: valueStyle,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }
+          }
+        }
+
         // Financial Summary
         final costs = <String, double>{};
         double accomTotal = 0;
@@ -664,6 +732,20 @@ class _HolidaySummaryScreenState extends ConsumerState<HolidaySummaryScreen> {
     _itineraryDays = List<ItineraryDay>.from(rawDays)
       ..sort((a, b) => a.dayNumber.compareTo(b.dayNumber));
 
+    // Collect all parent IDs and filter documents
+    final allParentIds = <String>{
+      hId,
+      ..._accommodations.map((a) => a.id),
+      ..._travelLegs.map((l) => l.id),
+      ..._carHires.map((c) => c.id),
+      ..._activities.map((a) => a.id),
+      ..._travelers.map((t) => t.id),
+      ..._itineraryDays.map((d) => d.id),
+    };
+    final allDocs = ref.watch(documentsProvider).valueOrNull ?? [];
+    _documents =
+        allDocs.where((d) => allParentIds.contains(d.parentId)).toList();
+
     return holidaysAsync.when(
       loading: () => const AppScaffold(
         title: 'Trip Summary',
@@ -758,6 +840,7 @@ class _HolidaySummaryScreenState extends ConsumerState<HolidaySummaryScreen> {
                           if (_activities.isNotEmpty) _buildActivitiesSection(),
                           if (_itineraryDays.isNotEmpty)
                             _buildItinerarySection(),
+                          if (_documents.isNotEmpty) _buildDocumentsSection(),
                           _buildFinancialSection(),
                         ],
                       ),
@@ -801,6 +884,7 @@ class _HolidaySummaryScreenState extends ConsumerState<HolidaySummaryScreen> {
 
   Widget _buildHeader() {
     final h = _holiday!;
+    final holidayColour = AppColors.holidayColour(h.colour);
     return Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       elevation: 2,
@@ -810,8 +894,11 @@ class _HolidaySummaryScreenState extends ConsumerState<HolidaySummaryScreen> {
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
-          gradient: const LinearGradient(
-            colors: [AppColors.softPurple, AppColors.softPink],
+          gradient: LinearGradient(
+            colors: [
+              holidayColour.withValues(alpha: 0.12),
+              holidayColour.withValues(alpha: 0.06),
+            ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -819,7 +906,37 @@ class _HolidaySummaryScreenState extends ConsumerState<HolidaySummaryScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(h.name, style: AppTextStyles.heading.copyWith(fontSize: 22)),
+            Row(
+              children: [
+                if (h.icon.isNotEmpty) ...[
+                  Container(
+                    width: 52,
+                    height: 52,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(14),
+                      color: holidayColour.withValues(alpha: 0.15),
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Padding(
+                        padding: const EdgeInsets.all(4),
+                        child: Image.asset(
+                          AppColors.holidayIconAsset(h.icon),
+                          fit: BoxFit.contain,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                ],
+                Expanded(
+                  child: Text(
+                    h.name,
+                    style: AppTextStyles.heading.copyWith(fontSize: 22),
+                  ),
+                ),
+              ],
+            ),
             if (h.startDate.isNotEmpty || h.endDate.isNotEmpty) ...[
               const SizedBox(height: 8),
               Row(
@@ -830,10 +947,12 @@ class _HolidaySummaryScreenState extends ConsumerState<HolidaySummaryScreen> {
                     color: AppColors.textSecondary,
                   ),
                   const SizedBox(width: 6),
-                  Text(
-                    '${formatDateUK(h.startDate)} - ${formatDateUK(h.endDate)}',
-                    style: AppTextStyles.body.copyWith(
-                      color: AppColors.textSecondary,
+                  Expanded(
+                    child: Text(
+                      '${formatDateUK(h.startDate)} - ${formatDateUK(h.endDate)}',
+                      style: AppTextStyles.body.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
                     ),
                   ),
                 ],
@@ -931,6 +1050,7 @@ class _HolidaySummaryScreenState extends ConsumerState<HolidaySummaryScreen> {
                 _SummaryRow(label: 'Name', value: t.name),
                 if (t.notes.isNotEmpty)
                   _SummaryRow(label: 'Notes', value: t.notes),
+                ..._buildInlineDocuments(t.id),
               ],
             ),
           )
@@ -985,6 +1105,7 @@ class _HolidaySummaryScreenState extends ConsumerState<HolidaySummaryScreen> {
                   ),
                 if (a.notes.isNotEmpty)
                   _SummaryRow(label: 'Notes', value: a.notes),
+                ..._buildInlineDocuments(a.id),
               ],
             ),
           )
@@ -1033,6 +1154,7 @@ class _HolidaySummaryScreenState extends ConsumerState<HolidaySummaryScreen> {
               _SummaryRow(label: 'Cost', value: formatGBP(leg.cost)),
             if (leg.notes.isNotEmpty)
               _SummaryRow(label: 'Notes', value: leg.notes),
+            ..._buildInlineDocuments(leg.id),
           ],
         );
       }).toList(),
@@ -1075,6 +1197,7 @@ class _HolidaySummaryScreenState extends ConsumerState<HolidaySummaryScreen> {
                   ),
                 if (c.notes.isNotEmpty)
                   _SummaryRow(label: 'Notes', value: c.notes),
+                ..._buildInlineDocuments(c.id),
               ],
             ),
           )
@@ -1106,6 +1229,7 @@ class _HolidaySummaryScreenState extends ConsumerState<HolidaySummaryScreen> {
                   _SummaryRow(label: 'Cost', value: formatGBP(a.cost)),
                 if (a.notes.isNotEmpty)
                   _SummaryRow(label: 'Notes', value: a.notes),
+                ..._buildInlineDocuments(a.id),
               ],
             ),
           )
@@ -1195,11 +1319,290 @@ class _HolidaySummaryScreenState extends ConsumerState<HolidaySummaryScreen> {
                       ),
                     ),
                   ],
+                  ..._buildInlineDocuments(day.id).map(
+                    (w) => Padding(
+                      padding: const EdgeInsets.only(left: 42, right: 0),
+                      child: w,
+                    ),
+                  ),
                 ],
               ),
             ),
           )
           .toList(),
+    );
+  }
+
+  List<Widget> _buildInlineDocuments(String parentId) {
+    final docs = _documents.where((d) => d.parentId == parentId).toList();
+    if (docs.isEmpty) return [];
+    return [
+      Padding(
+        padding: const EdgeInsets.symmetric(vertical: 3),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(
+              width: 110,
+              child: Text(
+                'Documents:',
+                style: AppTextStyles.caption.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            Expanded(
+              child: Wrap(
+                spacing: 6,
+                runSpacing: 4,
+                children: docs.map((doc) {
+                  final fileExists = doc.localPath.isNotEmpty &&
+                      File(doc.localPath).existsSync();
+                  return InkWell(
+                    borderRadius: BorderRadius.circular(8),
+                    onTap: fileExists
+                        ? () => DocumentService.openFile(doc.localPath)
+                        : null,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: fileExists
+                            ? const Color(0xFFFFF3E0)
+                            : Colors.grey.shade100,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.attach_file_rounded,
+                            size: 12,
+                            color: fileExists
+                                ? const Color(0xFFE65100)
+                                : AppColors.textMuted,
+                          ),
+                          const SizedBox(width: 3),
+                          Flexible(
+                            child: Text(
+                              doc.filename,
+                              style: AppTextStyles.caption.copyWith(
+                                color: fileExists
+                                    ? const Color(0xFFE65100)
+                                    : AppColors.textMuted,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 11,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+          ],
+        ),
+      ),
+    ];
+  }
+
+  String _parentTypeLabel(String parentType) {
+    return switch (parentType) {
+      'holiday' => 'Holiday',
+      'accommodation' => 'Accommodation',
+      'travelLeg' => 'Travel',
+      'carHire' => 'Car Hire',
+      'activity' => 'Activity',
+      'traveler' => 'Traveller',
+      'itineraryDay' => 'Itinerary',
+      _ => parentType,
+    };
+  }
+
+  String _resolveParentName(DocumentRef doc) {
+    switch (doc.parentType) {
+      case 'holiday':
+        return _holiday?.name ?? 'Holiday';
+      case 'accommodation':
+        return _accommodations
+                .where((a) => a.id == doc.parentId)
+                .firstOrNull
+                ?.name ??
+            'Accommodation';
+      case 'travelLeg':
+        final leg =
+            _travelLegs.where((l) => l.id == doc.parentId).firstOrNull;
+        if (leg != null) return '${leg.from} \u2192 ${leg.to}';
+        return 'Travel';
+      case 'carHire':
+        return _carHires
+                .where((c) => c.id == doc.parentId)
+                .firstOrNull
+                ?.company ??
+            'Car Hire';
+      case 'activity':
+        return _activities
+                .where((a) => a.id == doc.parentId)
+                .firstOrNull
+                ?.name ??
+            'Activity';
+      case 'traveler':
+        return _travelers
+                .where((t) => t.id == doc.parentId)
+                .firstOrNull
+                ?.name ??
+            'Traveller';
+      case 'itineraryDay':
+        final day =
+            _itineraryDays.where((d) => d.id == doc.parentId).firstOrNull;
+        if (day != null) return 'Day ${day.dayNumber}';
+        return 'Itinerary';
+      default:
+        return doc.parentType;
+    }
+  }
+
+  IconData _docIconForType(String fileType) {
+    return switch (fileType) {
+      'PDF' => Icons.picture_as_pdf_rounded,
+      'Image' => Icons.image_rounded,
+      'Document' => Icons.description_rounded,
+      'Spreadsheet' => Icons.table_chart_rounded,
+      _ => Icons.insert_drive_file_rounded,
+    };
+  }
+
+  Color _docColorForType(String fileType) {
+    return switch (fileType) {
+      'PDF' => const Color(0xFFE53935),
+      'Image' => const Color(0xFF43A047),
+      'Document' => const Color(0xFF1E88E5),
+      'Spreadsheet' => const Color(0xFF2E7D32),
+      _ => AppColors.textMuted,
+    };
+  }
+
+  Widget _buildDocumentsSection() {
+    // Group documents by parentType
+    final grouped = <String, List<DocumentRef>>{};
+    for (final doc in _documents) {
+      grouped.putIfAbsent(doc.parentType, () => []).add(doc);
+    }
+
+    return _buildSection(
+      title: 'Documents',
+      icon: Icons.attach_file_rounded,
+      iconColor: const Color(0xFF5D4037),
+      children: grouped.entries.map((entry) {
+        final typeLabel = _parentTypeLabel(entry.key);
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(top: 4, bottom: 6),
+              child: Text(
+                typeLabel,
+                style: AppTextStyles.caption.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFF5D4037),
+                  fontSize: 12,
+                ),
+              ),
+            ),
+            ...entry.value.map((doc) {
+              final fileExists = doc.localPath.isNotEmpty &&
+                  File(doc.localPath).existsSync();
+              final parentName = _resolveParentName(doc);
+              final color = _docColorForType(doc.fileType);
+
+              return Container(
+                margin: const EdgeInsets.only(bottom: 6),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.7),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(10),
+                  onTap: fileExists
+                      ? () => DocumentService.openFile(doc.localPath)
+                      : null,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 10,
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 36,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            color: (fileExists ? color : AppColors.textMuted)
+                                .withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Icon(
+                            _docIconForType(doc.fileType),
+                            color:
+                                fileExists ? color : AppColors.textMuted,
+                            size: 20,
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                doc.filename,
+                                style: AppTextStyles.body.copyWith(
+                                  fontSize: 13,
+                                  color: fileExists
+                                      ? null
+                                      : AppColors.textMuted,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                parentName,
+                                style: AppTextStyles.caption.copyWith(
+                                  fontSize: 11,
+                                  color: AppColors.textMuted,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
+                        ),
+                        if (fileExists)
+                          Icon(
+                            Icons.open_in_new_rounded,
+                            size: 16,
+                            color: AppColors.textMuted,
+                          )
+                        else
+                          Text(
+                            'Missing',
+                            style: AppTextStyles.caption.copyWith(
+                              fontSize: 10,
+                              color: AppColors.textMuted,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            }),
+          ],
+        );
+      }).toList(),
     );
   }
 

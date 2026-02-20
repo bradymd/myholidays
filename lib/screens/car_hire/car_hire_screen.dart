@@ -3,11 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:my_holidays/models/car_hire.dart';
 import 'package:my_holidays/providers/car_hire_provider.dart';
+import 'package:my_holidays/providers/document_provider.dart';
 import 'package:my_holidays/theme/app_colors.dart';
 import 'package:my_holidays/theme/app_text_styles.dart';
 import 'package:my_holidays/utils/currency_helpers.dart';
 import 'package:my_holidays/utils/date_helpers.dart';
 import 'package:my_holidays/widgets/app_scaffold.dart';
+import 'package:my_holidays/models/document_ref.dart';
+import 'package:my_holidays/widgets/doc_count_badge.dart';
 import 'package:my_holidays/widgets/empty_state.dart';
 
 class CarHireScreen extends ConsumerWidget {
@@ -18,6 +21,7 @@ class CarHireScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final carHireAsync = ref.watch(carHiresProvider(holidayId));
+    final allDocs = ref.watch(documentsProvider).valueOrNull ?? [];
 
     return AppScaffold(
       title: 'Car Hire',
@@ -43,10 +47,15 @@ class CarHireScreen extends ConsumerWidget {
             itemCount: hires.length + 1,
             itemBuilder: (context, index) {
               if (index == hires.length) return const SizedBox(height: 80);
+              final hire = hires[index];
+              final docs = allDocs
+                  .where((d) => d.parentId == hire.id)
+                  .toList();
               return _CarHireCard(
-                carHire: hires[index],
+                carHire: hire,
                 holidayId: holidayId,
-                onDelete: () => _confirmDelete(context, ref, hires[index]),
+                documents: docs,
+                onDelete: () => _confirmDelete(context, ref, hire),
               );
             },
           );
@@ -91,11 +100,13 @@ class _CarHireCard extends StatelessWidget {
     required this.carHire,
     required this.holidayId,
     required this.onDelete,
+    this.documents = const [],
   });
 
   final CarHire carHire;
   final String holidayId;
   final VoidCallback onDelete;
+  final List<DocumentRef> documents;
 
   @override
   Widget build(BuildContext context) {
@@ -202,6 +213,12 @@ class _CarHireCard extends StatelessWidget {
                   icon: Icons.flight_takeoff_rounded,
                 ),
               const SizedBox(height: 8),
+
+              // Documents
+              if (documents.isNotEmpty) ...[
+                DocChips(documents: documents),
+                const SizedBox(height: 8),
+              ],
 
               // Info chips
               Wrap(

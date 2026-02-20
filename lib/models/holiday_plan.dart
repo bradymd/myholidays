@@ -11,6 +11,8 @@ class HolidayPlan with _$HolidayPlan {
     @Default('') String startDate,
     @Default('') String endDate,
     @Default('') String notes,
+    @Default('') String colour,
+    @Default('') String icon,
   }) = _HolidayPlan;
 
   factory HolidayPlan.fromJson(Map<String, dynamic> json) =>

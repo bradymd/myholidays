@@ -39,4 +39,42 @@ class AppColors {
   static const softMint = Color(0xFFE0F7F4);
   static const softLilac = Color(0xFFEDE7F6);
   static const softSky = Color(0xFFE3F2FD);
+
+  // Holiday icon helpers
+  static const holidayIconKeys = [
+    'flight',
+    'beach',
+    'driving',
+    'camping',
+    'sporty',
+    'relaxation',
+    'sightseeing',
+    'mountain',
+  ];
+
+  static String holidayIconAsset(String icon) {
+    final key = holidayIconKeys.contains(icon) ? icon : 'flight';
+    return 'assets/icons/$key.png';
+  }
+
+  static String holidayIconLabel(String icon) {
+    return switch (icon) {
+      'flight' => 'Flight',
+      'beach' => 'Beach',
+      'driving' => 'Road Trip',
+      'camping' => 'Camping',
+      'sporty' => 'Sports',
+      'relaxation' => 'Relaxation',
+      'sightseeing' => 'Sightseeing',
+      'mountain' => 'Mountain',
+      _ => 'Flight',
+    };
+  }
+
+  static Color holidayColour(String hex) {
+    if (hex.isEmpty) return AppColors.primary;
+    final value = int.tryParse(hex, radix: 16);
+    if (value == null) return AppColors.primary;
+    return Color(value);
+  }
 }

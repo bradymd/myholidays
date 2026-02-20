@@ -3,11 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:my_holidays/models/accommodation.dart';
 import 'package:my_holidays/providers/accommodation_provider.dart';
+import 'package:my_holidays/providers/document_provider.dart';
 import 'package:my_holidays/theme/app_colors.dart';
 import 'package:my_holidays/theme/app_text_styles.dart';
 import 'package:my_holidays/utils/currency_helpers.dart';
 import 'package:my_holidays/utils/date_helpers.dart';
 import 'package:my_holidays/widgets/app_scaffold.dart';
+import 'package:my_holidays/models/document_ref.dart';
+import 'package:my_holidays/widgets/doc_count_badge.dart';
 import 'package:my_holidays/widgets/empty_state.dart';
 
 class AccommodationsScreen extends ConsumerWidget {
@@ -18,6 +21,7 @@ class AccommodationsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final accommodationsAsync = ref.watch(accommodationsProvider(holidayId));
+    final allDocs = ref.watch(documentsProvider).valueOrNull ?? [];
 
     return AppScaffold(
       title: 'Accommodation',
@@ -46,9 +50,13 @@ class AccommodationsScreen extends ConsumerWidget {
                 return const SizedBox(height: 80);
               }
               final accommodation = accommodations[index];
+              final docs = allDocs
+                  .where((d) => d.parentId == accommodation.id)
+                  .toList();
               return _AccommodationCard(
                 accommodation: accommodation,
                 holidayId: holidayId,
+                documents: docs,
                 onDelete: () => _confirmDelete(context, ref, accommodation),
               );
             },
@@ -99,11 +107,13 @@ class _AccommodationCard extends StatelessWidget {
     required this.accommodation,
     required this.holidayId,
     required this.onDelete,
+    this.documents = const [],
   });
 
   final Accommodation accommodation;
   final String holidayId;
   final VoidCallback onDelete;
+  final List<DocumentRef> documents;
 
   @override
   Widget build(BuildContext context) {
@@ -244,6 +254,12 @@ class _AccommodationCard extends StatelessWidget {
                     ),
                   ],
                 ),
+              ],
+
+              // Documents
+              if (documents.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                DocChips(documents: documents),
               ],
 
               // Deposit & balance info

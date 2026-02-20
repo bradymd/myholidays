@@ -27,6 +27,23 @@ class _AddEditHolidayScreenState extends ConsumerState<AddEditHolidayScreen> {
 
   String _startDate = '';
   String _endDate = '';
+  String _colour = '';
+  String _icon = '';
+
+  static const _colourPalette = [
+    0xFFFF1744, // Red
+    0xFFF50057, // Pink
+    0xFFD500F9, // Purple
+    0xFF651FFF, // Deep Purple
+    0xFF3D5AFE, // Indigo
+    0xFF2979FF, // Blue
+    0xFF00B0FF, // Light Blue
+    0xFF00E5FF, // Cyan
+    0xFF1DE9B6, // Teal
+    0xFF00E676, // Green
+    0xFFFFEA00, // Yellow
+    0xFFFF9100, // Orange
+  ];
 
   bool get isEditing => widget.editHolidayId != null;
 
@@ -48,6 +65,8 @@ class _AddEditHolidayScreenState extends ConsumerState<AddEditHolidayScreen> {
     _startDate = h.startDate;
     _endDate = h.endDate;
     _notesController.text = h.notes;
+    _colour = h.colour;
+    _icon = h.icon;
     setState(() {});
   }
 
@@ -115,6 +134,8 @@ class _AddEditHolidayScreenState extends ConsumerState<AddEditHolidayScreen> {
       startDate: _startDate,
       endDate: _endDate,
       notes: _notesController.text.trim(),
+      colour: _colour,
+      icon: _icon,
     );
 
     if (isEditing) {
@@ -192,6 +213,158 @@ class _AddEditHolidayScreenState extends ConsumerState<AddEditHolidayScreen> {
                         maxLines: 4,
                         minLines: 2,
                         textCapitalization: TextCapitalization.sentences,
+                      ),
+                      const SizedBox(height: 20),
+
+                      // Colour picker
+                      Text(
+                        'Colour',
+                        style: AppTextStyles.caption.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 10,
+                        runSpacing: 10,
+                        children: _colourPalette.map((c) {
+                          final hex = c.toRadixString(16).toUpperCase();
+                          final isSelected = _colour == hex;
+                          return GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                _colour = isSelected ? '' : hex;
+                              });
+                            },
+                            child: Container(
+                              width: 36,
+                              height: 36,
+                              decoration: BoxDecoration(
+                                color: Color(c),
+                                shape: BoxShape.circle,
+                                border: isSelected
+                                    ? Border.all(
+                                        color: Colors.white, width: 2.5)
+                                    : null,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Color(c).withValues(alpha: 0.4),
+                                    blurRadius: isSelected ? 8 : 4,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: isSelected
+                                  ? const Icon(Icons.check_rounded,
+                                      color: Colors.white, size: 20)
+                                  : null,
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                      const SizedBox(height: 20),
+
+                      // Icon picker
+                      Text(
+                        'Icon',
+                        style: AppTextStyles.caption.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 10,
+                        runSpacing: 10,
+                        children: [
+                          // "None" option
+                          Tooltip(
+                            message: 'None',
+                            child: GestureDetector(
+                              onTap: () {
+                                setState(() => _icon = '');
+                              },
+                              child: Container(
+                                width: 80,
+                                height: 80,
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(14),
+                                  color: Colors.white,
+                                  border: _icon.isEmpty
+                                      ? Border.all(
+                                          color: AppColors.primary, width: 2.5)
+                                      : Border.all(
+                                          color: AppColors.softLilac, width: 1),
+                                  boxShadow: _icon.isEmpty
+                                      ? [
+                                          BoxShadow(
+                                            color: AppColors.primary
+                                                .withValues(alpha: 0.3),
+                                            blurRadius: 8,
+                                            offset: const Offset(0, 2),
+                                          ),
+                                        ]
+                                      : null,
+                                ),
+                                child: Icon(
+                                  Icons.block_rounded,
+                                  color: _icon.isEmpty
+                                      ? AppColors.primary
+                                      : AppColors.textMuted,
+                                  size: 28,
+                                ),
+                              ),
+                            ),
+                          ),
+                          // Icon options
+                          ...AppColors.holidayIconKeys.map((key) {
+                            final isSelected = _icon == key;
+                            return Tooltip(
+                              message: AppColors.holidayIconLabel(key),
+                              child: GestureDetector(
+                                onTap: () {
+                                  setState(() => _icon = key);
+                                },
+                                child: Container(
+                                  width: 80,
+                                  height: 80,
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(14),
+                                    color: Colors.white,
+                                    border: isSelected
+                                        ? Border.all(
+                                            color: AppColors.primary,
+                                            width: 2.5)
+                                        : Border.all(
+                                            color: AppColors.softLilac,
+                                            width: 1),
+                                    boxShadow: isSelected
+                                        ? [
+                                            BoxShadow(
+                                              color: AppColors.primary
+                                                  .withValues(alpha: 0.3),
+                                              blurRadius: 8,
+                                              offset: const Offset(0, 2),
+                                            ),
+                                          ]
+                                        : null,
+                                  ),
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(12),
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(4),
+                                      child: Image.asset(
+                                        AppColors.holidayIconAsset(key),
+                                        fit: BoxFit.contain,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            );
+                          }),
+                        ],
                       ),
 
                       const SizedBox(height: 80),

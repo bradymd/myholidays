@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:my_holidays/models/traveler.dart';
+import 'package:my_holidays/providers/document_provider.dart';
 import 'package:my_holidays/providers/traveler_provider.dart';
 import 'package:my_holidays/theme/app_colors.dart';
 import 'package:my_holidays/theme/app_text_styles.dart';
 import 'package:my_holidays/widgets/app_scaffold.dart';
+import 'package:my_holidays/models/document_ref.dart';
+import 'package:my_holidays/widgets/doc_count_badge.dart';
 import 'package:my_holidays/widgets/empty_state.dart';
 
 class TravelersScreen extends ConsumerWidget {
@@ -16,6 +19,7 @@ class TravelersScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final travelersAsync = ref.watch(travelersProvider(holidayId));
+    final allDocs = ref.watch(documentsProvider).valueOrNull ?? [];
 
     return AppScaffold(
       title: 'Travellers',
@@ -44,9 +48,13 @@ class TravelersScreen extends ConsumerWidget {
                 return const SizedBox(height: 80);
               }
               final traveler = travelers[index];
+              final docs = allDocs
+                  .where((d) => d.parentId == traveler.id)
+                  .toList();
               return _TravelerCard(
                 traveler: traveler,
                 holidayId: holidayId,
+                documents: docs,
                 onDelete: () => _confirmDelete(context, ref, traveler),
               );
             },
@@ -93,11 +101,13 @@ class _TravelerCard extends StatelessWidget {
     required this.traveler,
     required this.holidayId,
     required this.onDelete,
+    this.documents = const [],
   });
 
   final Traveler traveler;
   final String holidayId;
   final VoidCallback onDelete;
+  final List<DocumentRef> documents;
 
   @override
   Widget build(BuildContext context) {
@@ -163,6 +173,10 @@ class _TravelerCard extends StatelessWidget {
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
+                    ],
+                    if (documents.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      DocChips(documents: documents),
                     ],
                   ],
                 ),
