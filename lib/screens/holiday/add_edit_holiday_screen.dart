@@ -155,7 +155,7 @@ class _AddEditHolidayScreenState extends ConsumerState<AddEditHolidayScreen> {
   @override
   Widget build(BuildContext context) {
     return AppScaffold(
-      title: isEditing ? 'Edit Holiday' : 'Add Holiday',
+      title: isEditing ? '' : 'Add Holiday',
       useOverlayNav: true,
       showBackButton: true,
       body: Stack(

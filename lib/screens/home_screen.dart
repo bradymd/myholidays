@@ -33,21 +33,30 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       overlayFabOnPressed: () => context.push('/add-holiday'),
       body: Stack(
         children: [
-          Positioned.fill(
-            child: Center(
-              child: Opacity(
-                opacity: 0.12,
-                child: Image.asset(
-                  'assets/images/holiday-icon.png',
-                  width: MediaQuery.of(context).size.width * 0.85,
-                  fit: BoxFit.contain,
-                ),
-              ),
-            ),
-          ),
           holidaysAsync.when(
             loading: () => const Center(child: CircularProgressIndicator()),
             error: (e, _) => Center(child: Text('Error: $e')),
+            data: (holidays) {
+              if (holidays.length <= 1) {
+                return Positioned.fill(
+                  child: Center(
+                    child: Opacity(
+                      opacity: 0.12,
+                      child: Image.asset(
+                        'assets/images/holiday-icon.png',
+                        width: MediaQuery.of(context).size.width * 0.85,
+                        fit: BoxFit.contain,
+                      ),
+                    ),
+                  ),
+                );
+              }
+              return const SizedBox.shrink();
+            },
+          ),
+          holidaysAsync.when(
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (e, _) => const SizedBox.shrink(),
             data: (holidays) {
               if (holidays.isEmpty) {
                 return EmptyState(

@@ -761,7 +761,11 @@ class _HolidaySummaryScreenState extends ConsumerState<HolidaySummaryScreen> {
         return AppScaffold(
           useOverlayNav: true,
           showBackButton: true,
-          title: 'Trip Summary',
+          title: '',
+          overlayFabIcon: Icons.edit_rounded,
+          overlayFabOnPressed: () => context.push(
+            '/holiday-manage/${widget.holidayId}',
+          ),
           actions: [
             if (_holiday != null) ...[
               DecoratedBox(
@@ -824,58 +828,24 @@ class _HolidaySummaryScreenState extends ConsumerState<HolidaySummaryScreen> {
                     ),
                   ),
                 )
-              : Stack(
-                  children: [
-                    SingleChildScrollView(
-                      padding: const EdgeInsets.fromLTRB(20, 20, 20, 80),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _buildHeader(),
-                          if (_travelers.isNotEmpty) _buildTravellersSection(),
-                          if (_accommodations.isNotEmpty)
-                            _buildAccommodationSection(),
-                          if (_travelLegs.isNotEmpty) _buildTravelSection(),
-                          if (_carHires.isNotEmpty) _buildCarHireSection(),
-                          if (_activities.isNotEmpty) _buildActivitiesSection(),
-                          if (_itineraryDays.isNotEmpty)
-                            _buildItinerarySection(),
-                          if (_documents.isNotEmpty) _buildDocumentsSection(),
-                          _buildFinancialSection(),
-                        ],
-                      ),
-                    ),
-                    Positioned(
-                      right: 16,
-                      bottom: 16,
-                      child: DecoratedBox(
-                        decoration: BoxDecoration(
-                          color: AppColors.primary.withValues(alpha: 0.75),
-                          shape: BoxShape.circle,
-                          boxShadow: const [
-                            BoxShadow(
-                              color: Colors.black12,
-                              blurRadius: 4,
-                              offset: Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: IconButton(
-                          onPressed: () => context.push(
-                            '/holiday-manage/${widget.holidayId}',
-                          ),
-                          tooltip: 'Edit',
-                          icon: const Icon(
-                            Icons.edit_rounded,
-                            color: Colors.white,
-                            size: 22,
-                          ),
-                          padding: const EdgeInsets.all(10),
-                          constraints: const BoxConstraints(),
-                        ),
-                      ),
-                    ),
-                  ],
+              : SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 80),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildHeader(),
+                      if (_travelers.isNotEmpty) _buildTravellersSection(),
+                      if (_accommodations.isNotEmpty)
+                        _buildAccommodationSection(),
+                      if (_travelLegs.isNotEmpty) _buildTravelSection(),
+                      if (_carHires.isNotEmpty) _buildCarHireSection(),
+                      if (_activities.isNotEmpty) _buildActivitiesSection(),
+                      if (_itineraryDays.isNotEmpty)
+                        _buildItinerarySection(),
+                      if (_documents.isNotEmpty) _buildDocumentsSection(),
+                      _buildFinancialSection(),
+                    ],
+                  ),
                 ),
         );
       },
@@ -886,10 +856,13 @@ class _HolidaySummaryScreenState extends ConsumerState<HolidaySummaryScreen> {
     final h = _holiday!;
     final holidayColour = AppColors.holidayColour(h.colour);
     return Card(
+      clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       elevation: 2,
       shadowColor: AppColors.cardShadow,
-      child: Container(
+      child: InkWell(
+        onTap: () => context.push('/edit-holiday/${widget.holidayId}'),
+        child: Container(
         width: double.infinity,
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
@@ -935,6 +908,11 @@ class _HolidaySummaryScreenState extends ConsumerState<HolidaySummaryScreen> {
                     style: AppTextStyles.heading.copyWith(fontSize: 22),
                   ),
                 ),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  color: holidayColour.withValues(alpha: 0.5),
+                  size: 24,
+                ),
               ],
             ),
             if (h.startDate.isNotEmpty || h.endDate.isNotEmpty) ...[
@@ -970,6 +948,7 @@ class _HolidaySummaryScreenState extends ConsumerState<HolidaySummaryScreen> {
           ],
         ),
       ),
+      ),
     );
   }
 
@@ -978,7 +957,58 @@ class _HolidaySummaryScreenState extends ConsumerState<HolidaySummaryScreen> {
     required IconData icon,
     required Color iconColor,
     required List<Widget> children,
+    VoidCallback? onTap,
   }) {
+    final content = Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      iconColor.withValues(alpha: 0.15),
+                      iconColor.withValues(alpha: 0.08),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: iconColor.withValues(alpha: 0.15),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Icon(icon, color: iconColor, size: 20),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  title,
+                  style: AppTextStyles.subheading.copyWith(fontSize: 17),
+                ),
+              ),
+              if (onTap != null)
+                Icon(
+                  Icons.chevron_right_rounded,
+                  color: iconColor.withValues(alpha: 0.5),
+                  size: 24,
+                ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          ...children,
+        ],
+      ),
+    );
+
     return Padding(
       padding: const EdgeInsets.only(top: 16),
       child: Card(
@@ -992,47 +1022,9 @@ class _HolidaySummaryScreenState extends ConsumerState<HolidaySummaryScreen> {
               end: Alignment.centerRight,
             ),
           ),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            iconColor.withValues(alpha: 0.15),
-                            iconColor.withValues(alpha: 0.08),
-                          ],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: iconColor.withValues(alpha: 0.15),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: Icon(icon, color: iconColor, size: 20),
-                    ),
-                    const SizedBox(width: 10),
-                    Text(
-                      title,
-                      style: AppTextStyles.subheading.copyWith(fontSize: 17),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                ...children,
-              ],
-            ),
-          ),
+          child: onTap != null
+              ? InkWell(onTap: onTap, child: content)
+              : content,
         ),
       ),
     );
@@ -1043,6 +1035,7 @@ class _HolidaySummaryScreenState extends ConsumerState<HolidaySummaryScreen> {
       title: 'Travellers',
       icon: Icons.people_rounded,
       iconColor: const Color(0xFF283593),
+      onTap: () => context.push('/travelers/${widget.holidayId}'),
       children: _travelers
           .map(
             (t) => _SummaryCard(
@@ -1063,6 +1056,7 @@ class _HolidaySummaryScreenState extends ConsumerState<HolidaySummaryScreen> {
       title: 'Accommodation',
       icon: Icons.hotel_rounded,
       iconColor: const Color(0xFF2E7D32),
+      onTap: () => context.push('/accommodations/${widget.holidayId}'),
       children: _accommodations
           .map(
             (a) => _SummaryCard(
@@ -1118,6 +1112,7 @@ class _HolidaySummaryScreenState extends ConsumerState<HolidaySummaryScreen> {
       title: 'Travel',
       icon: Icons.flight_rounded,
       iconColor: const Color(0xFF1565C0),
+      onTap: () => context.push('/travel/${widget.holidayId}'),
       children: _travelLegs.map((leg) {
         final typeLabel = leg.type.isNotEmpty
             ? '${leg.type[0].toUpperCase()}${leg.type.substring(1)}'
@@ -1166,6 +1161,7 @@ class _HolidaySummaryScreenState extends ConsumerState<HolidaySummaryScreen> {
       title: 'Car Hire',
       icon: Icons.directions_car_rounded,
       iconColor: const Color(0xFFE65100),
+      onTap: () => context.push('/car-hire/${widget.holidayId}'),
       children: _carHires
           .map(
             (c) => _SummaryCard(
@@ -1210,6 +1206,7 @@ class _HolidaySummaryScreenState extends ConsumerState<HolidaySummaryScreen> {
       title: 'Activities',
       icon: Icons.local_activity_rounded,
       iconColor: const Color(0xFFC62828),
+      onTap: () => context.push('/activities/${widget.holidayId}'),
       children: _activities
           .map(
             (a) => _SummaryCard(
@@ -1242,6 +1239,7 @@ class _HolidaySummaryScreenState extends ConsumerState<HolidaySummaryScreen> {
       title: 'Itinerary',
       icon: Icons.map_rounded,
       iconColor: const Color(0xFF00695C),
+      onTap: () => context.push('/itinerary/${widget.holidayId}'),
       children: _itineraryDays
           .map(
             (day) => Container(
@@ -1498,6 +1496,7 @@ class _HolidaySummaryScreenState extends ConsumerState<HolidaySummaryScreen> {
       title: 'Documents',
       icon: Icons.attach_file_rounded,
       iconColor: const Color(0xFF5D4037),
+      onTap: () => context.push('/documents/holiday/${widget.holidayId}'),
       children: grouped.entries.map((entry) {
         final typeLabel = _parentTypeLabel(entry.key);
         return Column(
