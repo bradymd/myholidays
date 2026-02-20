@@ -60,16 +60,15 @@ Visit the [MyHolidays Support Page](https://bradymd.github.io/myholidays/) for m
 
 ## Screenshots
 
+<p align="center">
+  <img src="screenshots/home-screen.png" width="280" alt="Home screen showing holiday list">
+</p>
+
 <table>
   <tr>
-    <td align="center"><b>Home</b><br><img src="screenshots/Home.png" width="200"></td>
-    <td align="center"><b>Manage Holiday</b><br><img src="screenshots/ManageHoliday.png" width="200"></td>
-    <td align="center"><b>Accommodation</b><br><img src="screenshots/Accommodation.png" width="200"></td>
-  </tr>
-  <tr>
-    <td align="center"><b>Travel</b><br><img src="screenshots/Travel.png" width="200"></td>
-    <td align="center"><b>Itinerary</b><br><img src="screenshots/Itinerary.png" width="200"></td>
-    <td align="center"><b>Settings</b><br><img src="screenshots/Settings.png" width="200"></td>
+    <td align="center"><b>Trip Summary</b><br><img src="screenshots/trip-summary.png" width="220"></td>
+    <td align="center"><b>Edit Accommodation</b><br><img src="screenshots/edit-accommodation.png" width="220"></td>
+    <td align="center"><b>Settings & Tools</b><br><img src="screenshots/settings-tools.png" width="220"></td>
   </tr>
 </table>
 
