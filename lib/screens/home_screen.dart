@@ -9,6 +9,8 @@ import 'package:my_holidays/utils/date_helpers.dart';
 import 'package:my_holidays/widgets/app_scaffold.dart';
 import 'package:my_holidays/widgets/empty_state.dart';
 import 'package:my_holidays/widgets/holiday_card.dart';
+import 'package:my_holidays/widgets/shimmer_loading.dart';
+import 'package:my_holidays/widgets/staggered_list.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -34,7 +36,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       body: Stack(
         children: [
           holidaysAsync.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
+            loading: () => const SizedBox.shrink(),
             error: (e, _) => Center(child: Text('Error: $e')),
             data: (holidays) {
               if (holidays.length <= 1) {
@@ -55,7 +57,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             },
           ),
           holidaysAsync.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
+            loading: () => const ShimmerList(),
             error: (e, _) => const SizedBox.shrink(),
             data: (holidays) {
               if (holidays.isEmpty) {
@@ -156,13 +158,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       const SizedBox.shrink(),
 
                   // Holiday cards
-                  ...filtered.map((h) => Padding(
+                  for (int i = 0; i < filtered.length; i++)
+                    StaggeredListItem(
+                      index: i,
+                      child: Padding(
                         padding: const EdgeInsets.only(bottom: 16),
                         child: HolidayCard(
-                          holiday: h,
-                          onTap: () => context.push('/holiday/${h.id}'),
+                          holiday: filtered[i],
+                          onTap: () => context.push('/holiday/${filtered[i].id}'),
                         ),
-                      )),
+                      ),
+                    ),
 
                   const SizedBox(height: 64),
                 ],

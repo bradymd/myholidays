@@ -12,6 +12,8 @@ import 'package:my_holidays/widgets/app_scaffold.dart';
 import 'package:my_holidays/models/document_ref.dart';
 import 'package:my_holidays/widgets/doc_count_badge.dart';
 import 'package:my_holidays/widgets/empty_state.dart';
+import 'package:my_holidays/widgets/shimmer_loading.dart';
+import 'package:my_holidays/widgets/staggered_list.dart';
 
 class ActivitiesScreen extends ConsumerWidget {
   const ActivitiesScreen({super.key, required this.holidayId});
@@ -30,7 +32,7 @@ class ActivitiesScreen extends ConsumerWidget {
       overlayFabIcon: Icons.add_rounded,
       overlayFabOnPressed: () => context.push('/add-activity/$holidayId'),
       body: activitiesAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const ShimmerList(),
         error: (e, _) => Center(child: Text('Error: $e')),
         data: (activities) {
           if (activities.isEmpty) {
@@ -53,11 +55,14 @@ class ActivitiesScreen extends ConsumerWidget {
               final docs = allDocs
                   .where((d) => d.parentId == activity.id)
                   .toList();
-              return _ActivityCard(
-                activity: activity,
-                holidayId: holidayId,
-                documents: docs,
-                onDelete: () => _confirmDelete(context, ref, activity),
+              return StaggeredListItem(
+                index: index,
+                child: _ActivityCard(
+                  activity: activity,
+                  holidayId: holidayId,
+                  documents: docs,
+                  onDelete: () => _confirmDelete(context, ref, activity),
+                ),
               );
             },
           );

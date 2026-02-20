@@ -21,6 +21,7 @@ import 'package:my_holidays/utils/date_helpers.dart';
 import 'package:my_holidays/models/document_ref.dart';
 import 'package:my_holidays/widgets/app_scaffold.dart';
 import 'package:my_holidays/widgets/doc_count_badge.dart';
+import 'package:my_holidays/widgets/shimmer_loading.dart';
 
 class HolidayDetailScreen extends ConsumerStatefulWidget {
   const HolidayDetailScreen({super.key, required this.holidayId});
@@ -229,7 +230,7 @@ class _HolidayDetailScreenState extends ConsumerState<HolidayDetailScreen> {
 
     return holidaysAsync.when(
       loading: () =>
-          const Scaffold(body: Center(child: CircularProgressIndicator())),
+          const Scaffold(body: ShimmerList()),
       error: (e, _) => Scaffold(body: Center(child: Text('Error: $e'))),
       data: (holidays) {
         final holiday = holidays

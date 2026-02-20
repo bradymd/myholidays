@@ -22,7 +22,11 @@ class HolidayCard extends ConsumerWidget {
     );
     final holidayColour = AppColors.holidayColour(holiday.colour);
 
-    return Card(
+    return Hero(
+      tag: 'holiday-${holiday.id}',
+      child: Material(
+        type: MaterialType.transparency,
+        child: Card(
       clipBehavior: Clip.antiAlias,
       elevation: 3,
       shadowColor: isPast
@@ -209,6 +213,8 @@ class HolidayCard extends ConsumerWidget {
           ),
         ),
       ),
+    ),
+    ),
     );
   }
 

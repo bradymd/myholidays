@@ -11,6 +11,8 @@ import 'package:my_holidays/widgets/app_scaffold.dart';
 import 'package:my_holidays/models/document_ref.dart';
 import 'package:my_holidays/widgets/doc_count_badge.dart';
 import 'package:my_holidays/widgets/empty_state.dart';
+import 'package:my_holidays/widgets/shimmer_loading.dart';
+import 'package:my_holidays/widgets/staggered_list.dart';
 
 class ItineraryScreen extends ConsumerWidget {
   const ItineraryScreen({super.key, required this.holidayId});
@@ -29,7 +31,7 @@ class ItineraryScreen extends ConsumerWidget {
       overlayFabIcon: Icons.add_rounded,
       overlayFabOnPressed: () => context.push('/add-itinerary-day/$holidayId'),
       body: daysAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const ShimmerList(),
         error: (e, _) => Center(
           child: Padding(
             padding: const EdgeInsets.all(24),
@@ -60,13 +62,16 @@ class ItineraryScreen extends ConsumerWidget {
               final docs = allDocs
                   .where((d) => d.parentId == day.id)
                   .toList();
-              return _DayCard(
-                day: day,
-                holidayId: holidayId,
-                documents: docs,
-                onEdit: () =>
-                    context.push('/edit-itinerary-day/$holidayId/${day.id}'),
-                onDelete: () => _confirmDelete(context, ref, day),
+              return StaggeredListItem(
+                index: index,
+                child: _DayCard(
+                  day: day,
+                  holidayId: holidayId,
+                  documents: docs,
+                  onEdit: () =>
+                      context.push('/edit-itinerary-day/$holidayId/${day.id}'),
+                  onDelete: () => _confirmDelete(context, ref, day),
+                ),
               );
             },
           );

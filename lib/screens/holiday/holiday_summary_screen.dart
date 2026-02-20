@@ -29,6 +29,7 @@ import 'package:my_holidays/theme/app_text_styles.dart';
 import 'package:my_holidays/utils/currency_helpers.dart';
 import 'package:my_holidays/utils/date_helpers.dart';
 import 'package:my_holidays/widgets/app_scaffold.dart';
+import 'package:my_holidays/widgets/shimmer_loading.dart';
 
 class HolidaySummaryScreen extends ConsumerStatefulWidget {
   const HolidaySummaryScreen({super.key, required this.holidayId});
@@ -91,29 +92,39 @@ class _HolidaySummaryScreenState extends ConsumerState<HolidaySummaryScreen> {
       onLayout: (PdfPageFormat format) async {
         final pdf = pw.Document();
 
+        // Load TTF fonts for full Unicode support (bullets, arrows, dashes)
+        final font = await PdfGoogleFonts.nunitoSansRegular();
+        final fontBold = await PdfGoogleFonts.nunitoSansBold();
+        final fontItalic = await PdfGoogleFonts.nunitoSansItalic();
+
         // Styles
         const purple = PdfColors.purple;
         final titleStyle = pw.TextStyle(
+          font: fontBold,
           fontSize: 24,
           fontWeight: pw.FontWeight.bold,
           color: purple,
         );
         final subtitleStyle = pw.TextStyle(
+          font: font,
           fontSize: 12,
           color: PdfColors.grey700,
         );
         final sectionHeaderStyle = pw.TextStyle(
+          font: fontBold,
           fontSize: 16,
           fontWeight: pw.FontWeight.bold,
           color: purple,
         );
         final labelStyle = pw.TextStyle(
+          font: fontBold,
           fontSize: 10,
           fontWeight: pw.FontWeight.bold,
           color: PdfColors.grey800,
         );
-        const valueStyle = pw.TextStyle(fontSize: 10);
+        final valueStyle = pw.TextStyle(font: font, fontSize: 10);
         final notesStyle = pw.TextStyle(
+          font: fontItalic,
           fontSize: 10,
           fontStyle: pw.FontStyle.italic,
           color: PdfColors.grey600,
@@ -365,6 +376,7 @@ class _HolidaySummaryScreenState extends ConsumerState<HolidaySummaryScreen> {
                 child: pw.Text(
                   typeLabel,
                   style: pw.TextStyle(
+                    font: fontBold,
                     fontSize: 11,
                     fontWeight: pw.FontWeight.bold,
                     color: PdfColors.grey800,
@@ -446,6 +458,7 @@ class _HolidaySummaryScreenState extends ConsumerState<HolidaySummaryScreen> {
                           pw.Text(
                             formatGBP(entry.value),
                             style: pw.TextStyle(
+                              font: fontBold,
                               fontSize: 10,
                               fontWeight: pw.FontWeight.bold,
                             ),
@@ -463,6 +476,7 @@ class _HolidaySummaryScreenState extends ConsumerState<HolidaySummaryScreen> {
                         pw.Text(
                           'TOTAL',
                           style: pw.TextStyle(
+                            font: fontBold,
                             fontSize: 13,
                             fontWeight: pw.FontWeight.bold,
                             color: purple,
@@ -471,6 +485,7 @@ class _HolidaySummaryScreenState extends ConsumerState<HolidaySummaryScreen> {
                         pw.Text(
                           formatGBP(grandTotal),
                           style: pw.TextStyle(
+                            font: fontBold,
                             fontSize: 13,
                             fontWeight: pw.FontWeight.bold,
                             color: purple,
@@ -533,7 +548,7 @@ class _HolidaySummaryScreenState extends ConsumerState<HolidaySummaryScreen> {
     return holidaysAsync.when(
       loading: () => const AppScaffold(
         title: 'Trip Summary',
-        body: Center(child: CircularProgressIndicator()),
+        body: ShimmerList(),
       ),
       error: (e, _) => AppScaffold(
         title: 'Trip Summary',
@@ -626,7 +641,11 @@ class _HolidaySummaryScreenState extends ConsumerState<HolidaySummaryScreen> {
   Widget _buildHeader() {
     final h = _holiday!;
     final holidayColour = AppColors.holidayColour(h.colour);
-    return Card(
+    return Hero(
+      tag: 'holiday-${widget.holidayId}',
+      child: Material(
+        type: MaterialType.transparency,
+        child: Card(
       clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       elevation: 2,
@@ -720,6 +739,8 @@ class _HolidaySummaryScreenState extends ConsumerState<HolidaySummaryScreen> {
         ),
       ),
       ),
+    ),
+    ),
     );
   }
 

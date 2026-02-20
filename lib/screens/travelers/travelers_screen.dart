@@ -10,6 +10,8 @@ import 'package:my_holidays/widgets/app_scaffold.dart';
 import 'package:my_holidays/models/document_ref.dart';
 import 'package:my_holidays/widgets/doc_count_badge.dart';
 import 'package:my_holidays/widgets/empty_state.dart';
+import 'package:my_holidays/widgets/shimmer_loading.dart';
+import 'package:my_holidays/widgets/staggered_list.dart';
 
 class TravelersScreen extends ConsumerWidget {
   const TravelersScreen({super.key, required this.holidayId});
@@ -28,7 +30,7 @@ class TravelersScreen extends ConsumerWidget {
       overlayFabIcon: Icons.add_rounded,
       overlayFabOnPressed: () => context.push('/add-traveler/$holidayId'),
       body: travelersAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const ShimmerList(),
         error: (e, _) => Center(child: Text('Error: $e')),
         data: (travelers) {
           if (travelers.isEmpty) {
@@ -51,11 +53,14 @@ class TravelersScreen extends ConsumerWidget {
               final docs = allDocs
                   .where((d) => d.parentId == traveler.id)
                   .toList();
-              return _TravelerCard(
-                traveler: traveler,
-                holidayId: holidayId,
-                documents: docs,
-                onDelete: () => _confirmDelete(context, ref, traveler),
+              return StaggeredListItem(
+                index: index,
+                child: _TravelerCard(
+                  traveler: traveler,
+                  holidayId: holidayId,
+                  documents: docs,
+                  onDelete: () => _confirmDelete(context, ref, traveler),
+                ),
               );
             },
           );

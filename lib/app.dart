@@ -23,6 +23,31 @@ import 'package:my_holidays/theme/app_theme.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 
+Page<void> _buildPage(Widget child, GoRouterState state) {
+  return CustomTransitionPage<void>(
+    key: state.pageKey,
+    child: child,
+    transitionDuration: const Duration(milliseconds: 250),
+    reverseTransitionDuration: const Duration(milliseconds: 200),
+    transitionsBuilder: (context, animation, secondaryAnimation, child) {
+      final curved = CurvedAnimation(
+        parent: animation,
+        curve: Curves.easeOut,
+      );
+      return FadeTransition(
+        opacity: curved,
+        child: SlideTransition(
+          position: Tween<Offset>(
+            begin: const Offset(0.03, 0),
+            end: Offset.zero,
+          ).animate(curved),
+          child: child,
+        ),
+      );
+    },
+  );
+}
+
 final _router = GoRouter(
   navigatorKey: _rootNavigatorKey,
   initialLocation: '/',
@@ -33,154 +58,229 @@ final _router = GoRouter(
     ),
     GoRoute(
       path: '/add-holiday',
-      builder: (context, state) => const AddEditHolidayScreen(),
+      pageBuilder: (context, state) => _buildPage(
+        const AddEditHolidayScreen(),
+        state,
+      ),
     ),
     GoRoute(
       path: '/edit-holiday/:id',
-      builder: (context, state) => AddEditHolidayScreen(
-        editHolidayId: state.pathParameters['id'],
+      pageBuilder: (context, state) => _buildPage(
+        AddEditHolidayScreen(
+          editHolidayId: state.pathParameters['id'],
+        ),
+        state,
       ),
     ),
     GoRoute(
       path: '/holiday/:id',
-      builder: (context, state) => HolidaySummaryScreen(
-        holidayId: state.pathParameters['id']!,
+      pageBuilder: (context, state) => _buildPage(
+        HolidaySummaryScreen(
+          holidayId: state.pathParameters['id']!,
+        ),
+        state,
       ),
     ),
     GoRoute(
       path: '/holiday-manage/:id',
-      builder: (context, state) => HolidayDetailScreen(
-        holidayId: state.pathParameters['id']!,
+      pageBuilder: (context, state) => _buildPage(
+        HolidayDetailScreen(
+          holidayId: state.pathParameters['id']!,
+        ),
+        state,
       ),
     ),
     GoRoute(
       path: '/travelers/:holidayId',
-      builder: (context, state) => TravelersScreen(
-        holidayId: state.pathParameters['holidayId']!,
+      pageBuilder: (context, state) => _buildPage(
+        TravelersScreen(
+          holidayId: state.pathParameters['holidayId']!,
+        ),
+        state,
       ),
     ),
     GoRoute(
       path: '/add-traveler/:holidayId',
-      builder: (context, state) => AddEditTravelerScreen(
-        holidayId: state.pathParameters['holidayId']!,
+      pageBuilder: (context, state) => _buildPage(
+        AddEditTravelerScreen(
+          holidayId: state.pathParameters['holidayId']!,
+        ),
+        state,
       ),
     ),
     GoRoute(
       path: '/edit-traveler/:holidayId/:id',
-      builder: (context, state) => AddEditTravelerScreen(
-        holidayId: state.pathParameters['holidayId']!,
-        editTravelerId: state.pathParameters['id'],
+      pageBuilder: (context, state) => _buildPage(
+        AddEditTravelerScreen(
+          holidayId: state.pathParameters['holidayId']!,
+          editTravelerId: state.pathParameters['id'],
+        ),
+        state,
       ),
     ),
     GoRoute(
       path: '/accommodations/:holidayId',
-      builder: (context, state) => AccommodationsScreen(
-        holidayId: state.pathParameters['holidayId']!,
+      pageBuilder: (context, state) => _buildPage(
+        AccommodationsScreen(
+          holidayId: state.pathParameters['holidayId']!,
+        ),
+        state,
       ),
     ),
     GoRoute(
       path: '/add-accommodation/:holidayId',
-      builder: (context, state) => AddEditAccommodationScreen(
-        holidayId: state.pathParameters['holidayId']!,
+      pageBuilder: (context, state) => _buildPage(
+        AddEditAccommodationScreen(
+          holidayId: state.pathParameters['holidayId']!,
+        ),
+        state,
       ),
     ),
     GoRoute(
       path: '/edit-accommodation/:holidayId/:id',
-      builder: (context, state) => AddEditAccommodationScreen(
-        holidayId: state.pathParameters['holidayId']!,
-        editAccommodationId: state.pathParameters['id'],
+      pageBuilder: (context, state) => _buildPage(
+        AddEditAccommodationScreen(
+          holidayId: state.pathParameters['holidayId']!,
+          editAccommodationId: state.pathParameters['id'],
+        ),
+        state,
       ),
     ),
     GoRoute(
       path: '/travel/:holidayId',
-      builder: (context, state) => TravelScreen(
-        holidayId: state.pathParameters['holidayId']!,
+      pageBuilder: (context, state) => _buildPage(
+        TravelScreen(
+          holidayId: state.pathParameters['holidayId']!,
+        ),
+        state,
       ),
     ),
     GoRoute(
       path: '/add-travel/:holidayId',
-      builder: (context, state) => AddEditTravelScreen(
-        holidayId: state.pathParameters['holidayId']!,
+      pageBuilder: (context, state) => _buildPage(
+        AddEditTravelScreen(
+          holidayId: state.pathParameters['holidayId']!,
+        ),
+        state,
       ),
     ),
     GoRoute(
       path: '/edit-travel/:holidayId/:id',
-      builder: (context, state) => AddEditTravelScreen(
-        holidayId: state.pathParameters['holidayId']!,
-        editTravelLegId: state.pathParameters['id'],
+      pageBuilder: (context, state) => _buildPage(
+        AddEditTravelScreen(
+          holidayId: state.pathParameters['holidayId']!,
+          editTravelLegId: state.pathParameters['id'],
+        ),
+        state,
       ),
     ),
     GoRoute(
       path: '/car-hire/:holidayId',
-      builder: (context, state) => CarHireScreen(
-        holidayId: state.pathParameters['holidayId']!,
+      pageBuilder: (context, state) => _buildPage(
+        CarHireScreen(
+          holidayId: state.pathParameters['holidayId']!,
+        ),
+        state,
       ),
     ),
     GoRoute(
       path: '/add-car-hire/:holidayId',
-      builder: (context, state) => AddEditCarHireScreen(
-        holidayId: state.pathParameters['holidayId']!,
+      pageBuilder: (context, state) => _buildPage(
+        AddEditCarHireScreen(
+          holidayId: state.pathParameters['holidayId']!,
+        ),
+        state,
       ),
     ),
     GoRoute(
       path: '/edit-car-hire/:holidayId/:id',
-      builder: (context, state) => AddEditCarHireScreen(
-        holidayId: state.pathParameters['holidayId']!,
-        editCarHireId: state.pathParameters['id'],
+      pageBuilder: (context, state) => _buildPage(
+        AddEditCarHireScreen(
+          holidayId: state.pathParameters['holidayId']!,
+          editCarHireId: state.pathParameters['id'],
+        ),
+        state,
       ),
     ),
     GoRoute(
       path: '/activities/:holidayId',
-      builder: (context, state) => ActivitiesScreen(
-        holidayId: state.pathParameters['holidayId']!,
+      pageBuilder: (context, state) => _buildPage(
+        ActivitiesScreen(
+          holidayId: state.pathParameters['holidayId']!,
+        ),
+        state,
       ),
     ),
     GoRoute(
       path: '/add-activity/:holidayId',
-      builder: (context, state) => AddEditActivityScreen(
-        holidayId: state.pathParameters['holidayId']!,
+      pageBuilder: (context, state) => _buildPage(
+        AddEditActivityScreen(
+          holidayId: state.pathParameters['holidayId']!,
+        ),
+        state,
       ),
     ),
     GoRoute(
       path: '/edit-activity/:holidayId/:id',
-      builder: (context, state) => AddEditActivityScreen(
-        holidayId: state.pathParameters['holidayId']!,
-        editActivityId: state.pathParameters['id'],
+      pageBuilder: (context, state) => _buildPage(
+        AddEditActivityScreen(
+          holidayId: state.pathParameters['holidayId']!,
+          editActivityId: state.pathParameters['id'],
+        ),
+        state,
       ),
     ),
     GoRoute(
       path: '/itinerary/:holidayId',
-      builder: (context, state) => ItineraryScreen(
-        holidayId: state.pathParameters['holidayId']!,
+      pageBuilder: (context, state) => _buildPage(
+        ItineraryScreen(
+          holidayId: state.pathParameters['holidayId']!,
+        ),
+        state,
       ),
     ),
     GoRoute(
       path: '/add-itinerary-day/:holidayId',
-      builder: (context, state) => AddEditItineraryDayScreen(
-        holidayId: state.pathParameters['holidayId']!,
+      pageBuilder: (context, state) => _buildPage(
+        AddEditItineraryDayScreen(
+          holidayId: state.pathParameters['holidayId']!,
+        ),
+        state,
       ),
     ),
     GoRoute(
       path: '/edit-itinerary-day/:holidayId/:id',
-      builder: (context, state) => AddEditItineraryDayScreen(
-        holidayId: state.pathParameters['holidayId']!,
-        editDayId: state.pathParameters['id'],
+      pageBuilder: (context, state) => _buildPage(
+        AddEditItineraryDayScreen(
+          holidayId: state.pathParameters['holidayId']!,
+          editDayId: state.pathParameters['id'],
+        ),
+        state,
       ),
     ),
     GoRoute(
       path: '/documents/:parentType/:parentId',
-      builder: (context, state) => DocumentsScreen(
-        parentType: state.pathParameters['parentType']!,
-        parentId: state.pathParameters['parentId']!,
+      pageBuilder: (context, state) => _buildPage(
+        DocumentsScreen(
+          parentType: state.pathParameters['parentType']!,
+          parentId: state.pathParameters['parentId']!,
+        ),
+        state,
       ),
     ),
     GoRoute(
       path: '/settings',
-      builder: (context, state) => const SettingsScreen(),
+      pageBuilder: (context, state) => _buildPage(
+        const SettingsScreen(),
+        state,
+      ),
     ),
     GoRoute(
       path: '/about',
-      builder: (context, state) => const AboutScreen(),
+      pageBuilder: (context, state) => _buildPage(
+        const AboutScreen(),
+        state,
+      ),
     ),
   ],
 );

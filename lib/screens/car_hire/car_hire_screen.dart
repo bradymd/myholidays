@@ -12,6 +12,8 @@ import 'package:my_holidays/widgets/app_scaffold.dart';
 import 'package:my_holidays/models/document_ref.dart';
 import 'package:my_holidays/widgets/doc_count_badge.dart';
 import 'package:my_holidays/widgets/empty_state.dart';
+import 'package:my_holidays/widgets/shimmer_loading.dart';
+import 'package:my_holidays/widgets/staggered_list.dart';
 
 class CarHireScreen extends ConsumerWidget {
   const CarHireScreen({super.key, required this.holidayId});
@@ -30,7 +32,7 @@ class CarHireScreen extends ConsumerWidget {
       overlayFabIcon: Icons.add_rounded,
       overlayFabOnPressed: () => context.push('/add-car-hire/$holidayId'),
       body: carHireAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const ShimmerList(),
         error: (e, _) => Center(child: Text('Error: $e')),
         data: (hires) {
           if (hires.isEmpty) {
@@ -51,11 +53,14 @@ class CarHireScreen extends ConsumerWidget {
               final docs = allDocs
                   .where((d) => d.parentId == hire.id)
                   .toList();
-              return _CarHireCard(
-                carHire: hire,
-                holidayId: holidayId,
-                documents: docs,
-                onDelete: () => _confirmDelete(context, ref, hire),
+              return StaggeredListItem(
+                index: index,
+                child: _CarHireCard(
+                  carHire: hire,
+                  holidayId: holidayId,
+                  documents: docs,
+                  onDelete: () => _confirmDelete(context, ref, hire),
+                ),
               );
             },
           );
