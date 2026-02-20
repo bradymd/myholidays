@@ -41,6 +41,10 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>MyHolidays needs access to your photo library to attach photos to your holidays and bookings.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>MyHolidays needs access to your camera to take photos of documents and receipts.</string>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
