@@ -6,8 +6,6 @@ import 'package:go_router/go_router.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
-import 'package:share_plus/share_plus.dart';
-
 import 'package:my_holidays/models/accommodation.dart';
 import 'package:my_holidays/models/activity.dart';
 import 'package:my_holidays/models/car_hire.dart';
@@ -16,6 +14,7 @@ import 'package:my_holidays/models/holiday_plan.dart';
 import 'package:my_holidays/models/itinerary_day.dart';
 import 'package:my_holidays/models/travel_leg.dart';
 import 'package:my_holidays/models/traveler.dart';
+import 'package:my_holidays/providers/database_provider.dart';
 import 'package:my_holidays/providers/accommodation_provider.dart';
 import 'package:my_holidays/providers/activity_provider.dart';
 import 'package:my_holidays/providers/car_hire_provider.dart';
@@ -42,6 +41,36 @@ class HolidaySummaryScreen extends ConsumerStatefulWidget {
 }
 
 class _HolidaySummaryScreenState extends ConsumerState<HolidaySummaryScreen> {
+  static const _allSections = [
+    'travelers',
+    'accommodation',
+    'travel',
+    'car_hire',
+    'activities',
+    'itinerary',
+    'documents',
+  ];
+
+  Set<String> _enabledSections = _allSections.toSet();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSectionPrefs();
+  }
+
+  Future<void> _loadSectionPrefs() async {
+    final db = ref.read(databaseProvider);
+    final value = await db.getSetting('holiday_sections_${widget.holidayId}');
+    if (mounted) {
+      setState(() {
+        if (value != null && value.isNotEmpty) {
+          _enabledSections = value.split(',').toSet();
+        }
+      });
+    }
+  }
+
   // Reactive data from providers — populated in build()
   HolidayPlan? _holiday;
   List<Traveler> _travelers = [];
@@ -52,251 +81,6 @@ class _HolidaySummaryScreenState extends ConsumerState<HolidaySummaryScreen> {
   List<ItineraryDay> _itineraryDays = [];
   List<DocumentRef> _documents = [];
 
-  // --- Build the plain-text summary ---
-
-  String _buildSummaryText() {
-    final buf = StringBuffer();
-    final h = _holiday;
-    if (h == null) return 'Holiday not found.';
-
-    // Header
-    buf.writeln('='.padRight(50, '='));
-    buf.writeln(h.name.toUpperCase());
-    buf.writeln('='.padRight(50, '='));
-    buf.writeln();
-
-    if (h.startDate.isNotEmpty || h.endDate.isNotEmpty) {
-      buf.writeln(
-        'Dates: ${formatDateUK(h.startDate)} - ${formatDateUK(h.endDate)}',
-      );
-      buf.writeln();
-    }
-
-    // Travellers
-    if (_travelers.isNotEmpty) {
-      buf.writeln('TRAVELLERS');
-      buf.writeln('-'.padRight(30, '-'));
-      for (final t in _travelers) {
-        buf.writeln('  ${t.name}');
-        if (t.notes.isNotEmpty) buf.writeln('  Notes: ${t.notes}');
-        buf.writeln();
-      }
-    }
-
-    // Accommodation
-    if (_accommodations.isNotEmpty) {
-      buf.writeln('ACCOMMODATION');
-      buf.writeln('-'.padRight(30, '-'));
-      for (final a in _accommodations) {
-        buf.writeln('  ${a.name}');
-        if (a.address.isNotEmpty) buf.writeln('  Address: ${a.address}');
-        if (a.checkIn.isNotEmpty || a.checkOut.isNotEmpty) {
-          buf.writeln(
-            '  Dates: ${formatDateUK(a.checkIn)} - ${formatDateUK(a.checkOut)}',
-          );
-        }
-        if (a.confirmationNumber.isNotEmpty) {
-          buf.writeln('  Confirmation: ${a.confirmationNumber}');
-        }
-        if (a.cost > 0) buf.writeln('  Cost: ${formatGBP(a.cost)}');
-        if (a.depositPaid > 0) {
-          buf.writeln('  Deposit Paid: ${formatGBP(a.depositPaid)}');
-        }
-        if (a.balanceDue > 0) {
-          buf.writeln('  Balance Due: ${formatGBP(a.balanceDue)}');
-        }
-        if (a.balanceDueDate.isNotEmpty) {
-          buf.writeln('  Due Date: ${formatDateUK(a.balanceDueDate)}');
-        }
-        if (a.balancePaidDate.isNotEmpty) {
-          buf.writeln('  Paid Date: ${formatDateUK(a.balancePaidDate)}');
-        }
-        if (a.notes.isNotEmpty) buf.writeln('  Notes: ${a.notes}');
-        buf.writeln();
-      }
-    }
-
-    // Travel
-    if (_travelLegs.isNotEmpty) {
-      buf.writeln('TRAVEL');
-      buf.writeln('-'.padRight(30, '-'));
-      for (final leg in _travelLegs) {
-        final typeLabel = leg.type.isNotEmpty
-            ? '${leg.type[0].toUpperCase()}${leg.type.substring(1)}'
-            : '';
-        final modeLabel = leg.mode.isNotEmpty
-            ? '${leg.mode[0].toUpperCase()}${leg.mode.substring(1)}'
-            : '';
-        buf.writeln(
-          '  $typeLabel${modeLabel.isNotEmpty ? ' ($modeLabel)' : ''}',
-        );
-        if (leg.from.isNotEmpty || leg.to.isNotEmpty) {
-          buf.writeln('  ${leg.from} -> ${leg.to}');
-        }
-        if (leg.departureDate.isNotEmpty) {
-          buf.write('  Depart: ${formatDateUK(leg.departureDate)}');
-          if (leg.departureTime.isNotEmpty) {
-            buf.write(' ${leg.departureTime}');
-          }
-          buf.writeln();
-        }
-        if (leg.arrivalDate.isNotEmpty) {
-          buf.write('  Arrive: ${formatDateUK(leg.arrivalDate)}');
-          if (leg.arrivalTime.isNotEmpty) buf.write(' ${leg.arrivalTime}');
-          buf.writeln();
-        }
-        if (leg.carrier.isNotEmpty) buf.writeln('  Carrier: ${leg.carrier}');
-        if (leg.bookingReference.isNotEmpty) {
-          buf.writeln('  Booking Ref: ${leg.bookingReference}');
-        }
-        if (leg.cost > 0) buf.writeln('  Cost: ${formatGBP(leg.cost)}');
-        if (leg.notes.isNotEmpty) buf.writeln('  Notes: ${leg.notes}');
-        buf.writeln();
-      }
-    }
-
-    // Car Hire
-    if (_carHires.isNotEmpty) {
-      buf.writeln('CAR HIRE');
-      buf.writeln('-'.padRight(30, '-'));
-      for (final c in _carHires) {
-        if (c.company.isNotEmpty) buf.writeln('  Company: ${c.company}');
-        if (c.pickupLocation.isNotEmpty || c.pickupDate.isNotEmpty) {
-          buf.write('  Pickup: ${c.pickupLocation}');
-          if (c.pickupDate.isNotEmpty) {
-            buf.write(' on ${formatDateUK(c.pickupDate)}');
-          }
-          if (c.pickupTime.isNotEmpty) buf.write(' at ${c.pickupTime}');
-          buf.writeln();
-        }
-        if (c.dropoffLocation.isNotEmpty || c.dropoffDate.isNotEmpty) {
-          buf.write('  Dropoff: ${c.dropoffLocation}');
-          if (c.dropoffDate.isNotEmpty) {
-            buf.write(' on ${formatDateUK(c.dropoffDate)}');
-          }
-          if (c.dropoffTime.isNotEmpty) buf.write(' at ${c.dropoffTime}');
-          buf.writeln();
-        }
-        if (c.drivers.isNotEmpty) buf.writeln('  Drivers: ${c.drivers}');
-        if (c.bookingReference.isNotEmpty) {
-          buf.writeln('  Booking Ref: ${c.bookingReference}');
-        }
-        if (c.deposit > 0) buf.writeln('  Deposit: ${formatGBP(c.deposit)}');
-        if (c.totalCost > 0) {
-          buf.writeln('  Total Cost: ${formatGBP(c.totalCost)}');
-        }
-        if (c.notes.isNotEmpty) buf.writeln('  Notes: ${c.notes}');
-        buf.writeln();
-      }
-    }
-
-    // Activities
-    if (_activities.isNotEmpty) {
-      buf.writeln('ACTIVITIES');
-      buf.writeln('-'.padRight(30, '-'));
-      for (final a in _activities) {
-        buf.writeln('  ${a.name}');
-        if (a.date.isNotEmpty) {
-          buf.write('  Date: ${formatDateUK(a.date)}');
-          if (a.time.isNotEmpty) buf.write(' at ${a.time}');
-          buf.writeln();
-        }
-        if (a.location.isNotEmpty) buf.writeln('  Location: ${a.location}');
-        if (a.bookingReference.isNotEmpty) {
-          buf.writeln('  Booking Ref: ${a.bookingReference}');
-        }
-        if (a.cost > 0) buf.writeln('  Cost: ${formatGBP(a.cost)}');
-        if (a.notes.isNotEmpty) buf.writeln('  Notes: ${a.notes}');
-        buf.writeln();
-      }
-    }
-
-    // Itinerary
-    if (_itineraryDays.isNotEmpty) {
-      buf.writeln('ITINERARY');
-      buf.writeln('-'.padRight(30, '-'));
-      for (final day in _itineraryDays) {
-        buf.writeln(
-          '  Day ${day.dayNumber}${day.title.isNotEmpty ? ' - ${day.title}' : ''}',
-        );
-        if (day.date.isNotEmpty) {
-          buf.writeln('  ${formatDateUK(day.date)}');
-        }
-        if (day.description.isNotEmpty) {
-          buf.writeln('  ${day.description}');
-        }
-        if (day.notes.isNotEmpty) {
-          buf.writeln('  Notes: ${day.notes}');
-        }
-        buf.writeln();
-      }
-    }
-
-    // Documents
-    if (_documents.isNotEmpty) {
-      buf.writeln('DOCUMENTS');
-      buf.writeln('-'.padRight(30, '-'));
-      final grouped = <String, List<DocumentRef>>{};
-      for (final doc in _documents) {
-        grouped.putIfAbsent(doc.parentType, () => []).add(doc);
-      }
-      for (final entry in grouped.entries) {
-        buf.writeln('  ${_parentTypeLabel(entry.key)}:');
-        for (final doc in entry.value) {
-          final parentName = _resolveParentName(doc);
-          buf.writeln('    - ${doc.filename} ($parentName)');
-        }
-      }
-      buf.writeln();
-    }
-
-    // Financial summary
-    final costs = <String, double>{};
-
-    double accomTotal = 0;
-    for (final a in _accommodations) {
-      accomTotal += a.cost;
-    }
-    if (accomTotal > 0) costs['Accommodation'] = accomTotal;
-
-    double travelTotal = 0;
-    for (final l in _travelLegs) {
-      travelTotal += l.cost;
-    }
-    if (travelTotal > 0) costs['Travel'] = travelTotal;
-
-    double carTotal = 0;
-    for (final c in _carHires) {
-      carTotal += c.totalCost;
-    }
-    if (carTotal > 0) costs['Car Hire'] = carTotal;
-
-    double activityTotal = 0;
-    for (final a in _activities) {
-      activityTotal += a.cost;
-    }
-    if (activityTotal > 0) costs['Activities'] = activityTotal;
-
-    if (costs.isNotEmpty) {
-      buf.writeln('FINANCIAL SUMMARY');
-      buf.writeln('-'.padRight(30, '-'));
-      double grandTotal = 0;
-      for (final entry in costs.entries) {
-        buf.writeln('  ${entry.key}: ${formatGBP(entry.value)}');
-        grandTotal += entry.value;
-      }
-      buf.writeln('  ${'=' * 25}');
-      buf.writeln('  TOTAL: ${formatGBP(grandTotal)}');
-      buf.writeln();
-    }
-
-    return buf.toString();
-  }
-
-  void _shareSummary() {
-    final text = _buildSummaryText();
-    Share.share(text);
-  }
 
   void _printSummary() {
     final h = _holiday;
@@ -792,31 +576,6 @@ class _HolidaySummaryScreenState extends ConsumerState<HolidaySummaryScreen> {
                   constraints: const BoxConstraints(),
                 ),
               ),
-              const SizedBox(width: 8),
-              DecoratedBox(
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.75),
-                  shape: BoxShape.circle,
-                  boxShadow: const [
-                    BoxShadow(
-                      color: Colors.black12,
-                      blurRadius: 4,
-                      offset: Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: IconButton(
-                  icon: const Icon(
-                    Icons.share_rounded,
-                    color: Colors.white,
-                    size: 20,
-                  ),
-                  onPressed: _shareSummary,
-                  tooltip: 'Share Summary',
-                  padding: const EdgeInsets.all(8),
-                  constraints: const BoxConstraints(),
-                ),
-              ),
             ],
           ],
           body: _holiday == null
@@ -834,15 +593,27 @@ class _HolidaySummaryScreenState extends ConsumerState<HolidaySummaryScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       _buildHeader(),
-                      if (_travelers.isNotEmpty) _buildTravellersSection(),
-                      if (_accommodations.isNotEmpty)
+                      if (_travelers.isNotEmpty &&
+                          _enabledSections.contains('travelers'))
+                        _buildTravellersSection(),
+                      if (_accommodations.isNotEmpty &&
+                          _enabledSections.contains('accommodation'))
                         _buildAccommodationSection(),
-                      if (_travelLegs.isNotEmpty) _buildTravelSection(),
-                      if (_carHires.isNotEmpty) _buildCarHireSection(),
-                      if (_activities.isNotEmpty) _buildActivitiesSection(),
-                      if (_itineraryDays.isNotEmpty)
+                      if (_travelLegs.isNotEmpty &&
+                          _enabledSections.contains('travel'))
+                        _buildTravelSection(),
+                      if (_carHires.isNotEmpty &&
+                          _enabledSections.contains('car_hire'))
+                        _buildCarHireSection(),
+                      if (_activities.isNotEmpty &&
+                          _enabledSections.contains('activities'))
+                        _buildActivitiesSection(),
+                      if (_itineraryDays.isNotEmpty &&
+                          _enabledSections.contains('itinerary'))
                         _buildItinerarySection(),
-                      if (_documents.isNotEmpty) _buildDocumentsSection(),
+                      if (_documents.isNotEmpty &&
+                          _enabledSections.contains('documents'))
+                        _buildDocumentsSection(),
                       _buildFinancialSection(),
                     ],
                   ),

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:my_holidays/models/holiday_plan.dart';
+import 'package:my_holidays/providers/database_provider.dart';
 import 'package:my_holidays/providers/holiday_provider.dart';
 import 'package:my_holidays/theme/app_colors.dart';
 import 'package:my_holidays/theme/app_text_styles.dart';
@@ -25,10 +26,25 @@ class _AddEditHolidayScreenState extends ConsumerState<AddEditHolidayScreen> {
   final _nameController = TextEditingController();
   final _notesController = TextEditingController();
 
+  late final String _holidayId;
+
   String _startDate = '';
   String _endDate = '';
   String _colour = '';
   String _icon = '';
+
+  static const _allSections = [
+    'travelers',
+    'accommodation',
+    'travel',
+    'car_hire',
+    'activities',
+    'itinerary',
+    'documents',
+  ];
+
+  Set<String> _enabledSections = _allSections.toSet();
+  bool _sectionsLoaded = false;
 
   static const _colourPalette = [
     0xFFFF1744, // Red
@@ -50,9 +66,71 @@ class _AddEditHolidayScreenState extends ConsumerState<AddEditHolidayScreen> {
   @override
   void initState() {
     super.initState();
+    _holidayId = widget.editHolidayId ?? generateId();
     if (isEditing) {
-      WidgetsBinding.instance.addPostFrameCallback((_) => _loadHoliday());
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _loadHoliday();
+        _loadSectionPrefs();
+      });
+    } else {
+      _sectionsLoaded = true;
     }
+  }
+
+  Future<void> _loadSectionPrefs() async {
+    final db = ref.read(databaseProvider);
+    final value = await db.getSetting('holiday_sections_$_holidayId');
+    if (mounted) {
+      setState(() {
+        if (value != null && value.isNotEmpty) {
+          _enabledSections = value.split(',').toSet();
+        }
+        _sectionsLoaded = true;
+      });
+    }
+  }
+
+  Future<void> _toggleSection(String key) async {
+    final updated = Set<String>.from(_enabledSections);
+    if (updated.contains(key)) {
+      updated.remove(key);
+    } else {
+      updated.add(key);
+    }
+    setState(() => _enabledSections = updated);
+    final db = ref.read(databaseProvider);
+    await db.setSetting(
+      'holiday_sections_$_holidayId',
+      updated.join(','),
+    );
+  }
+
+  Widget _sectionChip(String key, String label, IconData icon) {
+    final enabled = _enabledSections.contains(key);
+    return FilterChip(
+      label: Text(
+        label,
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+          color: enabled ? Colors.white : AppColors.textMuted,
+        ),
+      ),
+      avatar: Icon(
+        icon,
+        size: 14,
+        color: enabled ? Colors.white : AppColors.textMuted,
+      ),
+      selected: enabled,
+      onSelected: (_) => _toggleSection(key),
+      selectedColor: AppColors.primaryLight,
+      backgroundColor: AppColors.softLilac,
+      showCheckmark: false,
+      visualDensity: VisualDensity.compact,
+      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      side: BorderSide.none,
+    );
   }
 
   void _loadHoliday() {
@@ -129,7 +207,7 @@ class _AddEditHolidayScreenState extends ConsumerState<AddEditHolidayScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     final holiday = HolidayPlan(
-      id: widget.editHolidayId ?? generateId(),
+      id: _holidayId,
       name: _nameController.text.trim(),
       startDate: _startDate,
       endDate: _endDate,
@@ -366,6 +444,39 @@ class _AddEditHolidayScreenState extends ConsumerState<AddEditHolidayScreen> {
                           }),
                         ],
                       ),
+
+                      // Visible Sections
+                      if (_sectionsLoaded) ...[
+                        const SizedBox(height: 20),
+                        Text(
+                          'Visible Sections',
+                          style: AppTextStyles.caption.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Wrap(
+                          spacing: 6,
+                          runSpacing: 6,
+                          children: [
+                            _sectionChip('travelers', 'Travellers',
+                                Icons.people_rounded),
+                            _sectionChip('accommodation', 'Accommodation',
+                                Icons.hotel_rounded),
+                            _sectionChip(
+                                'travel', 'Travel', Icons.flight_rounded),
+                            _sectionChip('car_hire', 'Car Hire',
+                                Icons.directions_car_rounded),
+                            _sectionChip('activities', 'Activities',
+                                Icons.local_activity_rounded),
+                            _sectionChip('itinerary', 'Itinerary',
+                                Icons.calendar_today_rounded),
+                            _sectionChip('documents', 'Documents',
+                                Icons.attach_file_rounded),
+                          ],
+                        ),
+                      ],
 
                       const SizedBox(height: 80),
                     ],
