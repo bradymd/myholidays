@@ -7,7 +7,6 @@ import 'package:my_holidays/theme/app_colors.dart';
 import 'package:my_holidays/theme/app_text_styles.dart';
 import 'package:my_holidays/utils/date_helpers.dart';
 import 'package:my_holidays/widgets/app_scaffold.dart';
-import 'package:my_holidays/widgets/empty_state.dart';
 import 'package:my_holidays/widgets/holiday_card.dart';
 import 'package:my_holidays/widgets/shimmer_loading.dart';
 import 'package:my_holidays/widgets/staggered_list.dart';
@@ -61,11 +60,39 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             error: (e, _) => const SizedBox.shrink(),
             data: (holidays) {
               if (holidays.isEmpty) {
-                return EmptyState(
-                  message: 'Welcome to MyHolidays',
-                  subtitle: 'Add your first holiday to get started',
-                  actionLabel: 'Add Holiday',
-                  onAction: () => context.push('/add-holiday'),
+                return Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(32),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const SizedBox(height: 80),
+                        Text(
+                          'Welcome to MyHolidays',
+                          style: AppTextStyles.subheading.copyWith(fontSize: 20),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Add your first holiday to get started',
+                          style: AppTextStyles.caption.copyWith(fontSize: 14),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 28),
+                        ElevatedButton.icon(
+                          onPressed: () => context.push('/add-holiday'),
+                          icon: const Icon(Icons.add_rounded, size: 20),
+                          label: const Text('Add Holiday'),
+                          style: ElevatedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 28,
+                              vertical: 14,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 );
               }
 
