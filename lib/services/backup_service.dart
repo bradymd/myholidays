@@ -32,13 +32,28 @@ class BackupService {
     return zipPath;
   }
 
-  /// Creates/overwrites the rolling auto-backup. Silently skips if no DB.
+  /// Creates/overwrites the rolling auto-backup. Silently skips if no DB
+  /// or if the database has no holidays (avoids overwriting a valid backup
+  /// with an empty one).
   static Future<void> createAutoBackup() async {
     final appDir = await getApplicationDocumentsDirectory();
     final dbFile = File(p.join(appDir.path, _dbFilename));
 
     // Nothing to back up on first launch
     if (!await dbFile.exists()) return;
+
+    // Don't overwrite a valid backup with empty data
+    final db = sql.sqlite3.open(dbFile.path);
+    try {
+      final result = db.select('SELECT COUNT(*) AS cnt FROM holiday_plans');
+      final count = result.first['cnt'] as int;
+      if (count == 0) return;
+    } catch (_) {
+      // Table doesn't exist yet — nothing to back up
+      return;
+    } finally {
+      db.dispose();
+    }
 
     final archive = await _buildArchive(appDir.path);
     final zipData = ZipEncoder().encode(archive);

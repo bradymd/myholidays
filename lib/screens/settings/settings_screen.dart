@@ -53,7 +53,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       if (!mounted) return;
 
       if (Platform.isAndroid || Platform.isIOS) {
-        await Share.shareXFiles([XFile(zipPath)]);
+        final box = context.findRenderObject() as RenderBox?;
+        await Share.shareXFiles(
+          [XFile(zipPath)],
+          sharePositionOrigin:
+              box != null ? box.localToGlobal(Offset.zero) & box.size : Rect.zero,
+        );
       } else {
         // Desktop: copy to Downloads folder
         final downloadsDir = await _getDownloadsDirectory();
