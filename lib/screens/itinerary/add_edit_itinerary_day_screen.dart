@@ -39,7 +39,6 @@ class _AddEditItineraryDayScreenState
   String _holidayStartDate = '';
   bool _isLoading = true;
   bool _isSaving = false;
-  ItineraryDay? _existing;
   late String _dayId;
 
   bool get _isEditing => widget.editDayId != null;
@@ -69,7 +68,6 @@ class _AddEditItineraryDayScreenState
       );
       final existing = days.where((d) => d.id == widget.editDayId).firstOrNull;
       if (existing != null) {
-        _existing = existing;
         _dayNumberController.text = existing.dayNumber.toString();
         _titleController.text = existing.title;
         _descriptionController.text = existing.description;
