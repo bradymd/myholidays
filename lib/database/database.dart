@@ -417,6 +417,7 @@ class AppDatabase extends _$AppDatabase {
   }
 
   Future<void> deleteItineraryDay(String id) async {
+    await (delete(documentRefs)..where((t) => t.parentId.equals(id))).go();
     await (delete(itineraryDays)..where((t) => t.id.equals(id))).go();
   }
 

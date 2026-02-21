@@ -10,6 +10,7 @@ import 'package:my_holidays/theme/app_colors.dart';
 import 'package:my_holidays/theme/app_text_styles.dart';
 import 'package:my_holidays/utils/id_generator.dart';
 import 'package:my_holidays/widgets/app_scaffold.dart';
+import 'package:my_holidays/widgets/document_attachments.dart';
 
 class AddEditItineraryDayScreen extends ConsumerStatefulWidget {
   const AddEditItineraryDayScreen({
@@ -39,12 +40,14 @@ class _AddEditItineraryDayScreenState
   bool _isLoading = true;
   bool _isSaving = false;
   ItineraryDay? _existing;
+  late String _dayId;
 
   bool get _isEditing => widget.editDayId != null;
 
   @override
   void initState() {
     super.initState();
+    _dayId = widget.editDayId ?? generateId();
     _loadData();
     _loadHolidayDates();
   }
@@ -110,7 +113,7 @@ class _AddEditItineraryDayScreenState
     setState(() => _isSaving = true);
 
     final day = ItineraryDay(
-      id: _existing?.id ?? generateId(),
+      id: _dayId,
       holidayId: widget.holidayId,
       dayNumber: int.tryParse(_dayNumberController.text.trim()) ?? 0,
       date: _date,
@@ -273,6 +276,12 @@ class _AddEditItineraryDayScreenState
                                 decoration: const InputDecoration(
                                   hintText: 'Any extra notes...',
                                 ),
+                              ),
+
+                              // Document attachments
+                              DocumentAttachments(
+                                parentType: 'itineraryDay',
+                                parentId: _dayId,
                               ),
 
                               const SizedBox(height: 80),
