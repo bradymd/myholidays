@@ -1,9 +1,12 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:my_holidays/models/accommodation.dart';
 import 'package:my_holidays/models/activity.dart';
 import 'package:my_holidays/models/car_hire.dart';
@@ -22,6 +25,7 @@ import 'package:my_holidays/providers/itinerary_provider.dart';
 import 'package:my_holidays/providers/travel_provider.dart';
 import 'package:my_holidays/providers/traveler_provider.dart';
 import 'package:my_holidays/services/document_service.dart';
+import 'package:my_holidays/services/holiday_share_service.dart';
 import 'package:my_holidays/theme/app_colors.dart';
 import 'package:my_holidays/theme/app_text_styles.dart';
 import 'package:my_holidays/utils/currency_helpers.dart';
@@ -80,6 +84,46 @@ class _HolidaySummaryScreenState extends ConsumerState<HolidaySummaryScreen> {
   List<ItineraryDay> _itineraryDays = [];
   List<DocumentRef> _documents = [];
 
+
+  bool _isSharing = false;
+
+  Future<void> _shareHoliday() async {
+    final h = _holiday;
+    if (h == null) return;
+
+    setState(() => _isSharing = true);
+    try {
+      final filePath = await HolidayShareService.exportHoliday(
+        holiday: h,
+        travelers: _travelers,
+        accommodations: _accommodations,
+        travelLegs: _travelLegs,
+        carHires: _carHires,
+        activities: _activities,
+        itineraryDays: _itineraryDays,
+        documents: _documents,
+      );
+
+      if (!mounted) return;
+
+      if (Platform.isAndroid || Platform.isIOS) {
+        final box = context.findRenderObject() as RenderBox?;
+        await Share.shareXFiles(
+          [XFile(filePath)],
+          sharePositionOrigin: box != null
+              ? box.localToGlobal(Offset.zero) & box.size
+              : Rect.zero,
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to share: $e')),
+      );
+    } finally {
+      if (mounted) setState(() => _isSharing = false);
+    }
+  }
 
   void _printSummary() {
     final h = _holiday;
@@ -565,6 +609,40 @@ class _HolidaySummaryScreenState extends ConsumerState<HolidaySummaryScreen> {
           ),
           actions: [
             if (_holiday != null) ...[
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.75),
+                  shape: BoxShape.circle,
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Colors.black12,
+                      blurRadius: 4,
+                      offset: Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: IconButton(
+                  icon: _isSharing
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Icon(
+                          Icons.share_rounded,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                  onPressed: _isSharing ? null : _shareHoliday,
+                  tooltip: 'Share Holiday',
+                  padding: const EdgeInsets.all(8),
+                  constraints: const BoxConstraints(),
+                ),
+              ),
+              const SizedBox(width: 8),
               DecoratedBox(
                 decoration: BoxDecoration(
                   color: AppColors.primary.withValues(alpha: 0.75),

@@ -3,10 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:my_holidays/app.dart';
 import 'package:my_holidays/services/backup_service.dart';
 import 'package:my_holidays/services/document_service.dart';
+import 'package:my_holidays/services/incoming_file_handler.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await DocumentService.init();
+  await IncomingFileHandler.init();
 
   runApp(
     const ProviderScope(child: _AppLifecycleWrapper(child: MyHolidaysApp())),
