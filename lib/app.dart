@@ -371,7 +371,14 @@ class _ImportListenerState extends ConsumerState<_ImportListener> {
       return;
     }
 
-    if (!mounted) return;
+    if (!mounted) {
+      // Debug: should not happen — but log it
+      return;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Parsed OK: ${preview.holidayName}'), duration: const Duration(seconds: 5)),
+    );
 
     final counts = <String>[];
     if (preview.travelers > 0) {
