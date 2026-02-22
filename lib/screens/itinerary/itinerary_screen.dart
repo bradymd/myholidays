@@ -141,86 +141,82 @@ class _DayCard extends StatelessWidget {
             end: Alignment.centerRight,
           ),
         ),
-        child: InkWell(
-          onTap: onEdit,
-          borderRadius: BorderRadius.circular(14),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      width: 42,
-                      height: 42,
-                      decoration: BoxDecoration(
-                        color: sectionColor.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Center(
-                        child: Text(
-                          '${day.dayNumber}',
-                          style: AppTextStyles.subheading.copyWith(
-                            color: sectionColor,
-                            fontSize: 16,
-                          ),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 42,
+                    height: 42,
+                    decoration: BoxDecoration(
+                      color: sectionColor.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Center(
+                      child: Text(
+                        '${day.dayNumber}',
+                        style: AppTextStyles.subheading.copyWith(
+                          color: sectionColor,
+                          fontSize: 16,
                         ),
                       ),
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Day ${day.dayNumber}${day.title.isNotEmpty ? ' - ${day.title}' : ''}',
-                            style: AppTextStyles.subheading.copyWith(
-                              fontSize: 16,
-                            ),
-                            overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Day ${day.dayNumber}${day.title.isNotEmpty ? ' - ${day.title}' : ''}',
+                          style: AppTextStyles.subheading.copyWith(
+                            fontSize: 16,
                           ),
-                          if (day.date.isNotEmpty) ...[
-                            const SizedBox(height: 2),
-                            Text(
-                              formatDateUK(day.date),
-                              style: AppTextStyles.caption,
-                            ),
-                          ],
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        if (day.date.isNotEmpty) ...[
+                          const SizedBox(height: 2),
+                          Text(
+                            formatDateUK(day.date),
+                            style: AppTextStyles.caption,
+                          ),
                         ],
-                      ),
+                      ],
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.edit_outlined, size: 20),
-                      color: sectionColor,
-                      onPressed: onEdit,
-                      tooltip: 'Edit',
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.delete_outline_rounded, size: 20),
-                      color: AppColors.danger,
-                      onPressed: onDelete,
-                      tooltip: 'Delete',
-                    ),
-                  ],
-                ),
-                if (day.description.isNotEmpty) ...[
-                  const SizedBox(height: 10),
-                  Text(
-                    day.description,
-                    style: AppTextStyles.body.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
-                    maxLines: 3,
-                    overflow: TextOverflow.ellipsis,
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.edit_outlined, size: 20),
+                    color: sectionColor,
+                    onPressed: onEdit,
+                    tooltip: 'Edit',
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.delete_outline_rounded, size: 20),
+                    color: AppColors.danger,
+                    onPressed: onDelete,
+                    tooltip: 'Delete',
                   ),
                 ],
-                if (documents.isNotEmpty) ...[
-                  const SizedBox(height: 8),
-                  DocChips(documents: documents),
-                ],
+              ),
+              if (day.description.isNotEmpty) ...[
+                const SizedBox(height: 10),
+                Text(
+                  day.description,
+                  style: AppTextStyles.body.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ],
-            ),
+              if (documents.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                DocChips(documents: documents),
+              ],
+            ],
           ),
         ),
       ),
