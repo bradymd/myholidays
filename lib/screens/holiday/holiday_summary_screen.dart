@@ -1129,23 +1129,10 @@ class _HolidaySummaryScreenState extends ConsumerState<HolidaySummaryScreen> {
     return [
       Padding(
         padding: const EdgeInsets.symmetric(vertical: 3),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            SizedBox(
-              width: 110,
-              child: Text(
-                'Documents:',
-                style: AppTextStyles.caption.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-            Expanded(
-              child: Wrap(
-                spacing: 6,
-                runSpacing: 4,
-                children: docs.map((doc) {
+        child: Wrap(
+          spacing: 6,
+          runSpacing: 4,
+          children: docs.map((doc) {
                   final fileExists = doc.localPath.isNotEmpty &&
                       File(doc.localPath).existsSync();
                   return InkWell(
@@ -1193,9 +1180,6 @@ class _HolidaySummaryScreenState extends ConsumerState<HolidaySummaryScreen> {
                     ),
                   );
                 }).toList(),
-              ),
-            ),
-          ],
         ),
       ),
     ];
