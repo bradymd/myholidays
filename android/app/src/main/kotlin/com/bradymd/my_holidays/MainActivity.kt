@@ -39,19 +39,32 @@ class MainActivity : FlutterActivity() {
         if (intent.action != Intent.ACTION_VIEW) return null
         val uri = intent.data ?: return null
 
-        // For content:// URIs, copy to a temp file
-        return if (uri.scheme == "content") {
-            try {
-                val inputStream = contentResolver.openInputStream(uri) ?: return null
-                val tempFile = File(cacheDir, "import.myholiday")
-                tempFile.outputStream().use { output -> inputStream.copyTo(output) }
-                inputStream.close()
-                tempFile.absolutePath
-            } catch (e: Exception) {
-                null
+        // For file:// URIs, check extension directly
+        if (uri.scheme == "file") {
+            val path = uri.path ?: return null
+            return if (path.endsWith(".myholiday")) path else null
+        }
+
+        // For content:// URIs, resolve display name and check extension
+        val displayName = try {
+            contentResolver.query(uri, null, null, null, null)?.use { cursor ->
+                if (cursor.moveToFirst()) {
+                    val idx = cursor.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
+                    if (idx >= 0) cursor.getString(idx) else null
+                } else null
             }
-        } else {
-            uri.path
+        } catch (e: Exception) { null }
+
+        if (displayName == null || !displayName.endsWith(".myholiday")) return null
+
+        return try {
+            val inputStream = contentResolver.openInputStream(uri) ?: return null
+            val tempFile = File(cacheDir, "import.myholiday")
+            tempFile.outputStream().use { output -> inputStream.copyTo(output) }
+            inputStream.close()
+            tempFile.absolutePath
+        } catch (e: Exception) {
+            null
         }
     }
 }
