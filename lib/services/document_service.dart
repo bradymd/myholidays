@@ -9,6 +9,14 @@ class DocumentService {
 
   static String? _cachedAppDir;
 
+  /// Warm the cached app directory path. Call once at startup before
+  /// any UI renders so that [resolvePathSync] / [fileExistsSync] work
+  /// immediately.
+  static Future<void> init() async {
+    final dir = await getApplicationDocumentsDirectory();
+    _cachedAppDir = dir.path;
+  }
+
   static Future<String> get _appDir async {
     if (_cachedAppDir != null) return _cachedAppDir!;
     final dir = await getApplicationDocumentsDirectory();
