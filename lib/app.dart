@@ -332,10 +332,14 @@ class _ImportListenerState extends ConsumerState<_ImportListener> {
     super.initState();
     _subscription = IncomingFileHandler.incomingFiles.listen(_handleFile);
     // Check for a file that arrived on cold start before this listener existed.
+    // Wait until after the first frame so Navigator/Overlay are ready for dialogs.
     final pending = IncomingFileHandler.consumePendingFile();
     if (pending != null) {
-      // Delay slightly so the widget tree is fully built.
-      Future.microtask(() => _handleFile(pending));
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Future.delayed(const Duration(milliseconds: 500), () {
+          if (mounted) _handleFile(pending);
+        });
+      });
     }
   }
 
@@ -348,37 +352,44 @@ class _ImportListenerState extends ConsumerState<_ImportListener> {
   Future<void> _handleFile(String filePath) async {
     if (_isImporting) return;
 
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Received file: $filePath'), duration: const Duration(seconds: 5)),
-      );
-    }
-
     ShareFilePreview preview;
     try {
       preview = await HolidayShareService.parseFile(filePath);
     } on FormatException catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Format error: ${e.message}'), duration: const Duration(seconds: 8)),
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Cannot Import'),
+          content: Text(e.message),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
       );
       return;
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Parse error: $e'), duration: const Duration(seconds: 8)),
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Cannot Import'),
+          content: Text('$e'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
       );
       return;
     }
 
-    if (!mounted) {
-      // Debug: should not happen — but log it
-      return;
-    }
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Parsed OK: ${preview.holidayName}'), duration: const Duration(seconds: 5)),
-    );
+    if (!mounted) return;
 
     final counts = <String>[];
     if (preview.travelers > 0) {
