@@ -331,6 +331,12 @@ class _ImportListenerState extends ConsumerState<_ImportListener> {
   void initState() {
     super.initState();
     _subscription = IncomingFileHandler.incomingFiles.listen(_handleFile);
+    // Check for a file that arrived on cold start before this listener existed.
+    final pending = IncomingFileHandler.consumePendingFile();
+    if (pending != null) {
+      // Delay slightly so the widget tree is fully built.
+      Future.microtask(() => _handleFile(pending));
+    }
   }
 
   @override

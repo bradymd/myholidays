@@ -10,8 +10,19 @@ class IncomingFileHandler {
 
   static final _controller = StreamController<String>.broadcast();
 
+  /// File path received on cold start, before any listener is attached.
+  static String? _pendingFile;
+
   /// Stream of incoming file paths.
   static Stream<String> get incomingFiles => _controller.stream;
+
+  /// Returns and clears any file path that arrived before the listener
+  /// was attached (cold start).
+  static String? consumePendingFile() {
+    final f = _pendingFile;
+    _pendingFile = null;
+    return f;
+  }
 
   /// Call once at app startup to register the method call handler and
   /// check for an initial file (cold start).
@@ -25,11 +36,12 @@ class IncomingFileHandler {
       }
     });
 
-    // Check for a file passed on cold start
+    // Check for a file passed on cold start — store it for the listener
+    // to pick up, since the broadcast stream has no subscribers yet.
     try {
       final initialFile = await _channel.invokeMethod<String>('getInitialFile');
       if (initialFile != null && initialFile.isNotEmpty) {
-        _controller.add(initialFile);
+        _pendingFile = initialFile;
       }
     } on MissingPluginException {
       // No native handler yet (e.g. desktop) — ignore
