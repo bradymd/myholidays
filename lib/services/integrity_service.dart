@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:my_holidays/database/database.dart';
+import 'package:my_holidays/services/document_service.dart';
 
 class IntegrityIssue {
   final String recordType;
@@ -37,12 +38,13 @@ class IntegrityService {
     for (final d in docs) {
       if (d.localPath.isNotEmpty) {
         totalChecked++;
+        final resolvedPath = DocumentService.resolvePathSync(d.localPath);
         final issue = _checkFile(
           recordType: 'Document',
           recordLabel:
               d.filename.isNotEmpty ? d.filename : d.localPath.split('/').last,
           field: 'File',
-          path: d.localPath,
+          path: resolvedPath,
         );
         if (issue != null) issues.add(issue);
       }

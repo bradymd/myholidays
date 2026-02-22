@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -751,54 +749,44 @@ class _HolidaySummaryScreenState extends ConsumerState<HolidaySummaryScreen> {
     required List<Widget> children,
     VoidCallback? onTap,
   }) {
-    final content = Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      iconColor.withValues(alpha: 0.15),
-                      iconColor.withValues(alpha: 0.08),
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: iconColor.withValues(alpha: 0.15),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Icon(icon, color: iconColor, size: 20),
+    final header = Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                iconColor.withValues(alpha: 0.15),
+                iconColor.withValues(alpha: 0.08),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: iconColor.withValues(alpha: 0.15),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
               ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  title,
-                  style: AppTextStyles.subheading.copyWith(fontSize: 17),
-                ),
-              ),
-              if (onTap != null)
-                Icon(
-                  Icons.chevron_right_rounded,
-                  color: iconColor.withValues(alpha: 0.5),
-                  size: 24,
-                ),
             ],
           ),
-          const SizedBox(height: 12),
-          ...children,
-        ],
-      ),
+          child: Icon(icon, color: iconColor, size: 20),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(
+            title,
+            style: AppTextStyles.subheading.copyWith(fontSize: 17),
+          ),
+        ),
+        if (onTap != null)
+          Icon(
+            Icons.chevron_right_rounded,
+            color: iconColor.withValues(alpha: 0.5),
+            size: 24,
+          ),
+      ],
     );
 
     return Padding(
@@ -814,9 +802,23 @@ class _HolidaySummaryScreenState extends ConsumerState<HolidaySummaryScreen> {
               end: Alignment.centerRight,
             ),
           ),
-          child: onTap != null
-              ? InkWell(onTap: onTap, child: content)
-              : content,
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                onTap != null
+                    ? InkWell(
+                        onTap: onTap,
+                        borderRadius: BorderRadius.circular(8),
+                        child: header,
+                      )
+                    : header,
+                const SizedBox(height: 12),
+                ...children,
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -1133,8 +1135,7 @@ class _HolidaySummaryScreenState extends ConsumerState<HolidaySummaryScreen> {
           spacing: 6,
           runSpacing: 4,
           children: docs.map((doc) {
-                  final fileExists = doc.localPath.isNotEmpty &&
-                      File(doc.localPath).existsSync();
+                  final fileExists = DocumentService.fileExistsSync(doc.localPath);
                   return InkWell(
                     borderRadius: BorderRadius.circular(8),
                     onTap: fileExists
@@ -1290,8 +1291,7 @@ class _HolidaySummaryScreenState extends ConsumerState<HolidaySummaryScreen> {
               ),
             ),
             ...entry.value.map((doc) {
-              final fileExists = doc.localPath.isNotEmpty &&
-                  File(doc.localPath).existsSync();
+              final fileExists = DocumentService.fileExistsSync(doc.localPath);
               final parentName = _resolveParentName(doc);
               final color = _docColorForType(doc.fileType);
 

@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:my_holidays/models/document_ref.dart';
 import 'package:my_holidays/services/document_service.dart';
@@ -18,8 +16,7 @@ class DocChips extends StatelessWidget {
       spacing: 6,
       runSpacing: 4,
       children: documents.map((doc) {
-        final fileExists =
-            doc.localPath.isNotEmpty && File(doc.localPath).existsSync();
+        final fileExists = DocumentService.fileExistsSync(doc.localPath);
         return InkWell(
           borderRadius: BorderRadius.circular(8),
           onTap: fileExists

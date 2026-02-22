@@ -3,53 +3,34 @@ import 'package:flutter/foundation.dart';
 import 'package:open_file/open_file.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
-import 'package:sqlite3/sqlite3.dart' as sql;
 
 class DocumentService {
   static const _docsFolder = 'my_holidays_docs';
-  static const _dbFilename = 'my_holidays.sqlite';
+
+  static String? _cachedAppDir;
+
+  static Future<String> get _appDir async {
+    if (_cachedAppDir != null) return _cachedAppDir!;
+    final dir = await getApplicationDocumentsDirectory();
+    _cachedAppDir = dir.path;
+    return dir.path;
+  }
 
   static Future<String> get _docsDir async {
-    final dir = await getApplicationDocumentsDirectory();
-    final docsPath = p.join(dir.path, _docsFolder);
+    final appDir = await _appDir;
+    final docsPath = p.join(appDir, _docsFolder);
     await Directory(docsPath).create(recursive: true);
     return docsPath;
   }
 
-  /// Rewrites stale absolute document paths in the DB to match the current
-  /// app documents directory. Needed on iOS where the sandbox UUID changes
-  /// after app updates.
-  static Future<void> repairPaths() async {
-    final appDir = await getApplicationDocumentsDirectory();
-    final dbPath = p.join(appDir.path, _dbFilename);
-    if (!File(dbPath).existsSync()) return;
-
-    final db = sql.sqlite3.open(dbPath);
-    try {
-      final rows = db.select(
-        "SELECT id, local_path FROM document_refs WHERE local_path != ''",
-      );
-      for (final row in rows) {
-        final id = row['id'] as String;
-        final oldPath = row['local_path'] as String;
-
-        final folderIndex = oldPath.indexOf('$_docsFolder/');
-        if (folderIndex < 0) continue;
-
-        final relativePart = oldPath.substring(folderIndex);
-        final newPath = p.join(appDir.path, relativePart);
-        if (newPath == oldPath) continue;
-
-        db.execute(
-          'UPDATE document_refs SET local_path = ? WHERE id = ?',
-          [newPath, id],
-        );
-      }
-    } finally {
-      db.dispose();
-    }
+  /// Resolves a relative local path (e.g. `my_holidays_docs/file.pdf`)
+  /// to an absolute path using the current app documents directory.
+  static Future<String> absolutePath(String relativePath) async {
+    final appDir = await _appDir;
+    return p.join(appDir, relativePath);
   }
 
+  /// Saves a file and returns a **relative** path (e.g. `my_holidays_docs/file.pdf`).
   static Future<String> saveFile(String sourcePath, String filename) async {
     final dir = await _docsDir;
     final ext = p.extension(sourcePath);
@@ -61,14 +42,16 @@ class DocumentService {
     final sourceFile = File(sourcePath);
     if (!await sourceFile.exists()) {
       debugPrint('DocumentService: source file not found: $sourcePath');
-      return destPath;
+    } else {
+      await sourceFile.copy(destPath);
     }
-    await sourceFile.copy(destPath);
-    return destPath;
+    // Return relative path for storage
+    return p.join(_docsFolder, safeName);
   }
 
   static Future<bool> deleteFile(String localPath) async {
-    final file = File(localPath);
+    final absPath = await _resolveToAbsolute(localPath);
+    final file = File(absPath);
     if (await file.exists()) {
       await file.delete();
       return true;
@@ -77,7 +60,14 @@ class DocumentService {
   }
 
   static Future<void> openFile(String localPath) async {
-    await OpenFile.open(localPath);
+    final absPath = await _resolveToAbsolute(localPath);
+    await OpenFile.open(absPath);
+  }
+
+  /// Checks whether the document file exists on disk.
+  static bool fileExistsSync(String localPath) {
+    if (localPath.isEmpty) return false;
+    return File(resolvePathSync(localPath)).existsSync();
   }
 
   static String getFileType(String path) {
@@ -90,5 +80,21 @@ class DocumentService {
       '.xls' || '.xlsx' => 'Spreadsheet',
       _ => 'File',
     };
+  }
+
+  /// Synchronously resolves a stored path to an absolute path.
+  /// Uses the cached app dir (always warm by the time UI renders).
+  /// Falls back to the path as-is if the cache isn't ready.
+  static String resolvePathSync(String localPath) {
+    if (p.isAbsolute(localPath)) return localPath;
+    if (_cachedAppDir != null) return p.join(_cachedAppDir!, localPath);
+    return localPath;
+  }
+
+  /// If the path is already absolute, use it as-is (legacy data).
+  /// Otherwise treat it as relative to the app documents directory.
+  static Future<String> _resolveToAbsolute(String localPath) async {
+    if (p.isAbsolute(localPath)) return localPath;
+    return absolutePath(localPath);
   }
 }

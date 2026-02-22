@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -296,8 +294,7 @@ class _DocumentAttachmentsState extends ConsumerState<DocumentAttachments> {
         else
           ...List.generate(_docs.length, (i) {
             final doc = _docs[i];
-            final fileExists =
-                doc.localPath.isNotEmpty && File(doc.localPath).existsSync();
+            final fileExists = DocumentService.fileExistsSync(doc.localPath);
 
             return Card(
               margin: const EdgeInsets.only(bottom: 8),

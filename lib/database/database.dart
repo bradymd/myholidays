@@ -170,7 +170,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(openConnection());
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -184,6 +184,25 @@ class AppDatabase extends _$AppDatabase {
             await customStatement(
               "ALTER TABLE holiday_plans ADD COLUMN icon TEXT NOT NULL DEFAULT ''",
             );
+          }
+          if (from < 4) {
+            // Convert absolute document paths to relative (my_holidays_docs/...).
+            const folder = 'my_holidays_docs';
+            final rows = await customSelect(
+              "SELECT id, local_path FROM document_refs WHERE local_path != ''",
+            ).get();
+            for (final row in rows) {
+              final id = row.read<String>('id');
+              final oldPath = row.read<String>('local_path');
+              final idx = oldPath.indexOf('$folder/');
+              if (idx < 0) continue;
+              final relativePath = oldPath.substring(idx);
+              if (relativePath == oldPath) continue;
+              await customStatement(
+                'UPDATE document_refs SET local_path = ? WHERE id = ?',
+                [relativePath, id],
+              );
+            }
           }
         },
       );

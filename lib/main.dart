@@ -2,11 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:my_holidays/app.dart';
 import 'package:my_holidays/services/backup_service.dart';
-import 'package:my_holidays/services/document_service.dart';
 
-void main() async {
+void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  await DocumentService.repairPaths();
 
   runApp(
     const ProviderScope(child: _AppLifecycleWrapper(child: MyHolidaysApp())),

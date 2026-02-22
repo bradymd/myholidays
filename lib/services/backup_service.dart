@@ -122,55 +122,41 @@ class BackupService {
       }
     }
 
-    // Rewrite document paths to match this device's app directory
-    await _rewriteDocumentPaths(appDir.path);
+    // Convert any absolute document paths to relative
+    await _normaliseDocumentPaths(appDir.path);
 
     return true;
   }
 
-  /// After restore, rewrite absolute file paths in the DB to match
-  /// this device's app documents directory.
-  static Future<void> _rewriteDocumentPaths(String appDirPath) async {
+  /// After restore, convert absolute document paths to relative
+  /// (e.g. `my_holidays_docs/file.pdf`) so they resolve correctly
+  /// on any device or after sandbox UUID changes.
+  static Future<void> _normaliseDocumentPaths(String appDirPath) async {
     final dbPath = p.join(appDirPath, _dbFilename);
 
     final db = sql.sqlite3.open(dbPath);
     try {
-      _rewriteColumn(db, 'document_refs', 'local_path', appDirPath);
+      final rows = db.select(
+        "SELECT id, local_path FROM document_refs WHERE local_path != ''",
+      );
+      for (final row in rows) {
+        final id = row['id'] as String;
+        final oldPath = row['local_path'] as String;
+
+        // Already relative — nothing to do
+        if (!p.isAbsolute(oldPath)) continue;
+
+        final folderIndex = oldPath.indexOf('$_docsFolder/');
+        if (folderIndex < 0) continue;
+
+        final relativePath = oldPath.substring(folderIndex);
+        db.execute(
+          'UPDATE document_refs SET local_path = ? WHERE id = ?',
+          [relativePath, id],
+        );
+      }
     } finally {
       db.dispose();
-    }
-  }
-
-  static void _rewriteColumn(
-    sql.Database db,
-    String table,
-    String column,
-    String appDirPath,
-  ) {
-    final knownFolders = [_docsFolder];
-    final rows = db.select(
-      "SELECT id, $column FROM $table WHERE $column != ''",
-    );
-    for (final row in rows) {
-      final id = row['id'] as String;
-      final oldPath = row[column] as String;
-
-      String? newPath;
-      for (final folder in knownFolders) {
-        final folderIndex = oldPath.indexOf('$folder/');
-        if (folderIndex >= 0) {
-          final relativePart = oldPath.substring(folderIndex);
-          newPath = p.join(appDirPath, relativePart);
-          break;
-        }
-      }
-
-      newPath ??= p.join(appDirPath, _docsFolder, p.basename(oldPath));
-
-      db.execute(
-        'UPDATE $table SET $column = ? WHERE id = ?',
-        [newPath, id],
-      );
     }
   }
 
