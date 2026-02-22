@@ -23,6 +23,8 @@ class AppScaffold extends StatelessWidget {
     this.useOverlayNav = false,
     this.overlayFabIcon,
     this.overlayFabOnPressed,
+    this.extraMenuItems,
+    this.onExtraMenuSelected,
   });
 
   final String title;
@@ -41,6 +43,8 @@ class AppScaffold extends StatelessWidget {
   final bool useOverlayNav;
   final IconData? overlayFabIcon;
   final VoidCallback? overlayFabOnPressed;
+  final List<PopupMenuEntry<String>>? extraMenuItems;
+  final ValueChanged<String>? onExtraMenuSelected;
 
   @override
   Widget build(BuildContext context) {
@@ -83,7 +87,10 @@ class AppScaffold extends StatelessWidget {
                           child: a,
                         )),
                   if (showMenuButton)
-                    const _OverlayMenuButton()
+                    _OverlayMenuButton(
+                      extraItems: extraMenuItems,
+                      onExtraSelected: onExtraMenuSelected,
+                    )
                   else
                     const SizedBox(width: 42),
                 ],
@@ -277,7 +284,10 @@ class AppScaffold extends StatelessWidget {
 
 /// "..." menu button styled as a purple circle for overlay nav.
 class _OverlayMenuButton extends StatelessWidget {
-  const _OverlayMenuButton();
+  const _OverlayMenuButton({this.extraItems, this.onExtraSelected});
+
+  final List<PopupMenuEntry<String>>? extraItems;
+  final ValueChanged<String>? onExtraSelected;
 
   @override
   Widget build(BuildContext context) {
@@ -295,8 +305,18 @@ class _OverlayMenuButton extends StatelessWidget {
         icon: const Icon(Icons.more_horiz_rounded, color: Colors.white, size: 22),
         offset: const Offset(0, 48),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        onSelected: (path) => context.go(path),
+        onSelected: (value) {
+          if (value.startsWith('/')) {
+            context.go(value);
+          } else {
+            onExtraSelected?.call(value);
+          }
+        },
         itemBuilder: (_) => [
+          if (extraItems != null) ...[
+            ...extraItems!,
+            const PopupMenuDivider(),
+          ],
           _menuItem('/settings', 'Settings & Tools', Icons.settings_rounded, location),
           _menuItem('/about', 'About', Icons.info_outline_rounded, location),
         ],

@@ -607,68 +607,37 @@ class _HolidaySummaryScreenState extends ConsumerState<HolidaySummaryScreen> {
           overlayFabOnPressed: () => context.push(
             '/holiday-manage/${widget.holidayId}',
           ),
-          actions: [
-            if (_holiday != null) ...[
-              DecoratedBox(
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.75),
-                  shape: BoxShape.circle,
-                  boxShadow: const [
-                    BoxShadow(
-                      color: Colors.black12,
-                      blurRadius: 4,
-                      offset: Offset(0, 2),
+          extraMenuItems: _holiday != null
+              ? [
+                  PopupMenuItem<String>(
+                    value: 'share',
+                    enabled: !_isSharing,
+                    child: Row(
+                      children: [
+                        Icon(Icons.share_rounded, size: 20, color: AppColors.textSecondary),
+                        const SizedBox(width: 12),
+                        Text(_isSharing ? 'Sharing...' : 'Share Holiday',
+                            style: const TextStyle(fontWeight: FontWeight.w500)),
+                      ],
                     ),
-                  ],
-                ),
-                child: IconButton(
-                  icon: _isSharing
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                      : const Icon(
-                          Icons.share_rounded,
-                          color: Colors.white,
-                          size: 20,
-                        ),
-                  onPressed: _isSharing ? null : _shareHoliday,
-                  tooltip: 'Share Holiday',
-                  padding: const EdgeInsets.all(8),
-                  constraints: const BoxConstraints(),
-                ),
-              ),
-              const SizedBox(width: 8),
-              DecoratedBox(
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.75),
-                  shape: BoxShape.circle,
-                  boxShadow: const [
-                    BoxShadow(
-                      color: Colors.black12,
-                      blurRadius: 4,
-                      offset: Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: IconButton(
-                  icon: const Icon(
-                    Icons.print_rounded,
-                    color: Colors.white,
-                    size: 20,
                   ),
-                  onPressed: _printSummary,
-                  tooltip: 'Print / Save PDF',
-                  padding: const EdgeInsets.all(8),
-                  constraints: const BoxConstraints(),
-                ),
-              ),
-            ],
-          ],
+                  PopupMenuItem<String>(
+                    value: 'print',
+                    child: Row(
+                      children: [
+                        Icon(Icons.print_rounded, size: 20, color: AppColors.textSecondary),
+                        const SizedBox(width: 12),
+                        const Text('Print / Save PDF',
+                            style: TextStyle(fontWeight: FontWeight.w500)),
+                      ],
+                    ),
+                  ),
+                ]
+              : null,
+          onExtraMenuSelected: (value) {
+            if (value == 'share') _shareHoliday();
+            if (value == 'print') _printSummary();
+          },
           body: _holiday == null
               ? Center(
                   child: Text(
