@@ -103,37 +103,6 @@ class _HolidayDetailScreenState extends ConsumerState<HolidayDetailScreen> {
     return total;
   }
 
-  void _confirmDelete(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Delete Holiday?'),
-        content: const Text(
-          'This will permanently delete this holiday and all its travellers, '
-          'accommodation, travel, car hire, activities, itinerary and documents.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              ref
-                  .read(holidaysProvider.notifier)
-                  .deleteHoliday(widget.holidayId);
-              Navigator.pop(ctx);
-              context.go('/');
-            },
-            child: const Text(
-              'Delete',
-              style: TextStyle(color: AppColors.danger),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
   Widget _sectionChip(String key, String label, IconData icon) {
     final enabled = _enabledSections.contains(key);
@@ -163,28 +132,7 @@ class _HolidayDetailScreenState extends ConsumerState<HolidayDetailScreen> {
     );
   }
 
-  Widget _buildActionButton({
-    required IconData icon,
-    required String tooltip,
-    required VoidCallback onPressed,
-  }) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: AppColors.primary.withValues(alpha: 0.75),
-        shape: BoxShape.circle,
-        boxShadow: const [
-          BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2)),
-        ],
-      ),
-      child: IconButton(
-        onPressed: onPressed,
-        tooltip: tooltip,
-        icon: Icon(icon, color: Colors.white, size: 20),
-        padding: const EdgeInsets.all(8),
-        constraints: const BoxConstraints(),
-      ),
-    );
-  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -251,13 +199,7 @@ class _HolidayDetailScreenState extends ConsumerState<HolidayDetailScreen> {
           useOverlayNav: true,
           showBackButton: true,
           title: holiday.name.isNotEmpty ? holiday.name : 'Holiday Details',
-          actions: [
-            _buildActionButton(
-              icon: Icons.delete_outline_rounded,
-              tooltip: 'Delete',
-              onPressed: () => _confirmDelete(context),
-            ),
-          ],
+          actions: const [],
           body: SingleChildScrollView(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -665,12 +607,52 @@ class _HolidayDetailScreenState extends ConsumerState<HolidayDetailScreen> {
                   ),
                 ],
 
+                const SizedBox(height: 32),
+                const Divider(),
+                const SizedBox(height: 8),
+                Center(
+                  child: TextButton.icon(
+                    onPressed: _confirmDelete,
+                    icon: const Icon(Icons.delete_outline_rounded, color: AppColors.danger),
+                    label: Text('Delete Holiday', style: TextStyle(color: AppColors.danger)),
+                  ),
+                ),
                 const SizedBox(height: 64),
               ],
             ),
           ),
         );
       },
+    );
+  }
+
+  void _confirmDelete() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete Holiday?'),
+        content: Text(
+          'Remove "${ref.read(holidaysProvider).valueOrNull?.where((h) => h.id == widget.holidayId).firstOrNull?.name ?? 'this holiday'}"? '
+          'This cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              ref.read(holidaysProvider.notifier).deleteHoliday(widget.holidayId);
+              Navigator.pop(ctx);
+              context.go('/');
+            },
+            child: const Text(
+              'Delete',
+              style: TextStyle(color: AppColors.danger),
+            ),
+          ),
+        ],
+      ),
     );
   }
 

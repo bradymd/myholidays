@@ -1,7 +1,7 @@
 name: my_holidays
 description: "MyHolidays - Holiday & vacation planner"
 publish_to: 'none'
-version: 1.0.1+23
+version: 1.0.1+24
 
 environment:
   sdk: ^3.10.8
