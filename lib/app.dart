@@ -348,6 +348,12 @@ class _ImportListenerState extends ConsumerState<_ImportListener> {
   Future<void> _handleFile(String filePath) async {
     if (_isImporting) return;
 
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Received file: $filePath'), duration: const Duration(seconds: 5)),
+      );
+    }
+
     ShareFilePreview preview;
     try {
       preview = await HolidayShareService.parseFile(filePath);
