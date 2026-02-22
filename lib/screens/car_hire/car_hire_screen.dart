@@ -59,7 +59,6 @@ class CarHireScreen extends ConsumerWidget {
                   carHire: hire,
                   holidayId: holidayId,
                   documents: docs,
-                  onDelete: () => _confirmDelete(context, ref, hire),
                 ),
               );
             },
@@ -69,48 +68,17 @@ class CarHireScreen extends ConsumerWidget {
     );
   }
 
-  void _confirmDelete(BuildContext context, WidgetRef ref, CarHire carHire) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Delete Car Hire?'),
-        content: Text(
-          'Remove ${carHire.company.isNotEmpty ? carHire.company : "this car hire"}?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              ref
-                  .read(carHiresProvider(holidayId).notifier)
-                  .deleteCarHire(carHire.id);
-            },
-            child: const Text(
-              'Delete',
-              style: TextStyle(color: AppColors.danger),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }
 
 class _CarHireCard extends StatelessWidget {
   const _CarHireCard({
     required this.carHire,
     required this.holidayId,
-    required this.onDelete,
     this.documents = const [],
   });
 
   final CarHire carHire;
   final String holidayId;
-  final VoidCallback onDelete;
   final List<DocumentRef> documents;
 
   @override
@@ -179,13 +147,6 @@ class _CarHireCard extends StatelessWidget {
                     onPressed: () =>
                         context.push('/edit-car-hire/$holidayId/${carHire.id}'),
                     tooltip: 'Edit',
-                    visualDensity: VisualDensity.compact,
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.delete_outline_rounded, size: 20),
-                    color: AppColors.danger,
-                    onPressed: onDelete,
-                    tooltip: 'Delete',
                     visualDensity: VisualDensity.compact,
                   ),
                 ],

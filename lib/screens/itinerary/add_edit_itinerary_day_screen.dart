@@ -105,6 +105,38 @@ class _AddEditItineraryDayScreenState
     return DateFormat('dd/MM/yyyy').format(dt);
   }
 
+  Future<void> _confirmDelete() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete Day?'),
+        content: Text(
+          'Remove "Day ${_dayNumberController.text}${_titleController.text.isNotEmpty ? ' - ${_titleController.text}' : ''}"? '
+          'This cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text(
+              'Delete',
+              style: TextStyle(color: AppColors.danger),
+            ),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true && mounted) {
+      await ref
+          .read(itineraryDaysProvider(widget.holidayId).notifier)
+          .deleteItineraryDay(_dayId);
+      if (mounted) context.go('/itinerary/${widget.holidayId}');
+    }
+  }
+
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -282,6 +314,18 @@ class _AddEditItineraryDayScreenState
                                 parentId: _dayId,
                               ),
 
+                              if (_isEditing) ...[
+                                const SizedBox(height: 32),
+                                const Divider(),
+                                const SizedBox(height: 8),
+                                Center(
+                                  child: TextButton.icon(
+                                    onPressed: _confirmDelete,
+                                    icon: const Icon(Icons.delete_outline_rounded, color: AppColors.danger),
+                                    label: Text('Delete Day', style: TextStyle(color: AppColors.danger)),
+                                  ),
+                                ),
+                              ],
                               const SizedBox(height: 80),
                             ],
                           ),

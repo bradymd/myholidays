@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 import 'package:my_holidays/models/traveler.dart';
 import 'package:my_holidays/providers/document_provider.dart';
 import 'package:my_holidays/providers/traveler_provider.dart';
-import 'package:my_holidays/theme/app_colors.dart';
 import 'package:my_holidays/theme/app_text_styles.dart';
 import 'package:my_holidays/widgets/app_scaffold.dart';
 import 'package:my_holidays/models/document_ref.dart';
@@ -59,7 +58,6 @@ class TravelersScreen extends ConsumerWidget {
                   traveler: traveler,
                   holidayId: holidayId,
                   documents: docs,
-                  onDelete: () => _confirmDelete(context, ref, traveler),
                 ),
               );
             },
@@ -69,49 +67,17 @@ class TravelersScreen extends ConsumerWidget {
     );
   }
 
-  void _confirmDelete(BuildContext context, WidgetRef ref, Traveler traveler) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Delete Traveller?'),
-        content: Text(
-          'Remove "${traveler.name.isNotEmpty ? traveler.name : 'this traveller'}"? '
-          'This cannot be undone.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              ref
-                  .read(travelersProvider(holidayId).notifier)
-                  .deleteTraveler(traveler.id);
-            },
-            child: const Text(
-              'Delete',
-              style: TextStyle(color: AppColors.danger),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }
 
 class _TravelerCard extends StatelessWidget {
   const _TravelerCard({
     required this.traveler,
     required this.holidayId,
-    required this.onDelete,
     this.documents = const [],
   });
 
   final Traveler traveler;
   final String holidayId;
-  final VoidCallback onDelete;
   final List<DocumentRef> documents;
 
   @override
@@ -192,12 +158,6 @@ class _TravelerCard extends StatelessWidget {
                 onPressed: () =>
                     context.push('/edit-traveler/$holidayId/${traveler.id}'),
                 tooltip: 'Edit',
-              ),
-              IconButton(
-                icon: const Icon(Icons.delete_outline_rounded, size: 20),
-                color: AppColors.danger,
-                onPressed: onDelete,
-                tooltip: 'Delete',
               ),
             ],
           ),

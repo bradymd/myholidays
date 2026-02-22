@@ -148,6 +148,37 @@ class _AddEditTravelScreenState extends ConsumerState<AddEditTravelScreen> {
     }
   }
 
+  Future<void> _confirmDelete() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete Travel Leg?'),
+        content: const Text(
+          'Remove this travel leg? This cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text(
+              'Delete',
+              style: TextStyle(color: AppColors.danger),
+            ),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true && mounted) {
+      await ref
+          .read(travelLegsProvider(widget.holidayId).notifier)
+          .deleteTravelLeg(_entityId);
+      if (mounted) context.go('/travel/${widget.holidayId}');
+    }
+  }
+
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _saving = true);
@@ -461,6 +492,18 @@ class _AddEditTravelScreenState extends ConsumerState<AddEditTravelScreen> {
                         parentId: _entityId,
                       ),
 
+                      if (_isEdit) ...[
+                        const SizedBox(height: 32),
+                        const Divider(),
+                        const SizedBox(height: 8),
+                        Center(
+                          child: TextButton.icon(
+                            onPressed: _confirmDelete,
+                            icon: const Icon(Icons.delete_outline_rounded, color: AppColors.danger),
+                            label: Text('Delete Travel Leg', style: TextStyle(color: AppColors.danger)),
+                          ),
+                        ),
+                      ],
                       const SizedBox(height: 80),
                     ],
                   ),

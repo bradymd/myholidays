@@ -70,7 +70,6 @@ class ItineraryScreen extends ConsumerWidget {
                   documents: docs,
                   onEdit: () =>
                       context.push('/edit-itinerary-day/$holidayId/${day.id}'),
-                  onDelete: () => _confirmDelete(context, ref, day),
                 ),
               );
             },
@@ -80,33 +79,6 @@ class ItineraryScreen extends ConsumerWidget {
     );
   }
 
-  void _confirmDelete(BuildContext context, WidgetRef ref, ItineraryDay day) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Delete Day?'),
-        content: Text('Remove "Day ${day.dayNumber} - ${day.title}"?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () async {
-              Navigator.pop(ctx);
-              await ref
-                  .read(itineraryDaysProvider(holidayId).notifier)
-                  .deleteItineraryDay(day.id);
-            },
-            child: const Text(
-              'Delete',
-              style: TextStyle(color: AppColors.danger),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }
 
 class _DayCard extends StatelessWidget {
@@ -114,14 +86,12 @@ class _DayCard extends StatelessWidget {
     required this.day,
     required this.holidayId,
     required this.onEdit,
-    required this.onDelete,
     this.documents = const [],
   });
 
   final ItineraryDay day;
   final String holidayId;
   final VoidCallback onEdit;
-  final VoidCallback onDelete;
   final List<DocumentRef> documents;
 
   @override
@@ -192,12 +162,6 @@ class _DayCard extends StatelessWidget {
                     color: sectionColor,
                     onPressed: onEdit,
                     tooltip: 'Edit',
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.delete_outline_rounded, size: 20),
-                    color: AppColors.danger,
-                    onPressed: onDelete,
-                    tooltip: 'Delete',
                   ),
                 ],
               ),

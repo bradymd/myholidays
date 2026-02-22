@@ -61,7 +61,6 @@ class AccommodationsScreen extends ConsumerWidget {
                   accommodation: accommodation,
                   holidayId: holidayId,
                   documents: docs,
-                  onDelete: () => _confirmDelete(context, ref, accommodation),
                 ),
               );
             },
@@ -71,53 +70,17 @@ class AccommodationsScreen extends ConsumerWidget {
     );
   }
 
-  void _confirmDelete(
-    BuildContext context,
-    WidgetRef ref,
-    Accommodation accommodation,
-  ) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Delete Accommodation?'),
-        content: Text(
-          'Remove "${accommodation.name.isNotEmpty ? accommodation.name : 'this accommodation'}"? '
-          'This cannot be undone.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              ref
-                  .read(accommodationsProvider(holidayId).notifier)
-                  .deleteAccommodation(accommodation.id);
-            },
-            child: const Text(
-              'Delete',
-              style: TextStyle(color: AppColors.danger),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }
 
 class _AccommodationCard extends StatelessWidget {
   const _AccommodationCard({
     required this.accommodation,
     required this.holidayId,
-    required this.onDelete,
     this.documents = const [],
   });
 
   final Accommodation accommodation;
   final String holidayId;
-  final VoidCallback onDelete;
   final List<DocumentRef> documents;
 
   @override
@@ -205,12 +168,6 @@ class _AccommodationCard extends StatelessWidget {
                       '/edit-accommodation/$holidayId/${accommodation.id}',
                     ),
                     tooltip: 'Edit',
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.delete_outline_rounded, size: 20),
-                    color: AppColors.danger,
-                    onPressed: onDelete,
-                    tooltip: 'Delete',
                   ),
                 ],
               ),

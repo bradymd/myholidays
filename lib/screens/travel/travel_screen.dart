@@ -60,7 +60,6 @@ class TravelScreen extends ConsumerWidget {
                   leg: leg,
                   holidayId: holidayId,
                   documents: docs,
-                  onDelete: () => _confirmDelete(context, ref, leg),
                 ),
               );
             },
@@ -70,46 +69,17 @@ class TravelScreen extends ConsumerWidget {
     );
   }
 
-  void _confirmDelete(BuildContext context, WidgetRef ref, TravelLeg leg) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Delete Travel Leg?'),
-        content: Text('Remove ${leg.from} to ${leg.to}?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              ref
-                  .read(travelLegsProvider(holidayId).notifier)
-                  .deleteTravelLeg(leg.id);
-            },
-            child: const Text(
-              'Delete',
-              style: TextStyle(color: AppColors.danger),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }
 
 class _TravelLegCard extends StatelessWidget {
   const _TravelLegCard({
     required this.leg,
     required this.holidayId,
-    required this.onDelete,
     this.documents = const [],
   });
 
   final TravelLeg leg;
   final String holidayId;
-  final VoidCallback onDelete;
   final List<DocumentRef> documents;
 
   IconData _modeIcon(String mode) {
@@ -200,13 +170,6 @@ class _TravelLegCard extends StatelessWidget {
                     onPressed: () =>
                         context.push('/edit-travel/$holidayId/${leg.id}'),
                     tooltip: 'Edit',
-                    visualDensity: VisualDensity.compact,
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.delete_outline_rounded, size: 20),
-                    color: AppColors.danger,
-                    onPressed: onDelete,
-                    tooltip: 'Delete',
                     visualDensity: VisualDensity.compact,
                   ),
                 ],
