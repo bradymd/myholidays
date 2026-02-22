@@ -359,34 +359,14 @@ class _ImportListenerState extends ConsumerState<_ImportListener> {
       preview = await HolidayShareService.parseFile(filePath);
     } on FormatException catch (e) {
       if (!mounted) return;
-      showDialog(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          title: const Text('Cannot Import'),
-          content: Text(e.message),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('OK'),
-            ),
-          ],
-        ),
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Format error: ${e.message}'), duration: const Duration(seconds: 8)),
       );
       return;
-    } catch (_) {
+    } catch (e) {
       if (!mounted) return;
-      showDialog(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          title: const Text('Cannot Import'),
-          content: const Text('Not a valid MyHoliday share file.'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('OK'),
-            ),
-          ],
-        ),
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Parse error: $e'), duration: const Duration(seconds: 8)),
       );
       return;
     }
