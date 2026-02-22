@@ -13,6 +13,7 @@ import 'package:my_holidays/providers/document_provider.dart';
 import 'package:my_holidays/providers/holiday_provider.dart';
 import 'package:my_holidays/providers/settings_provider.dart';
 import 'package:my_holidays/services/backup_service.dart';
+import 'package:my_holidays/services/document_service.dart';
 import 'package:my_holidays/services/integrity_service.dart';
 import 'package:my_holidays/theme/app_colors.dart';
 import 'package:my_holidays/theme/app_text_styles.dart';
@@ -316,6 +317,41 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     }
   }
 
+  // --- Document Diagnostics ---
+
+  Future<void> _runDocDiagnostics() async {
+    try {
+      final diag = await DocumentService.diagnostics();
+
+      // Also check DB paths
+      final docs = await ref.read(documentsProvider.future);
+      final buf = StringBuffer(diag);
+      buf.writeln('\nDB document_refs: ${docs.length}');
+      for (final d in docs.take(10)) {
+        final exists = DocumentService.fileExistsSync(d.localPath);
+        buf.writeln('  ${d.filename}');
+        buf.writeln('    path: ${d.localPath}');
+        buf.writeln('    resolved: ${DocumentService.resolvePathSync(d.localPath)}');
+        buf.writeln('    exists: $exists');
+      }
+      if (docs.length > 10) buf.writeln('  ... and ${docs.length - 10} more');
+
+      if (!mounted) return;
+      _showResultDialog(
+        title: 'Document Diagnostics',
+        message: buf.toString(),
+        isSuccess: true,
+      );
+    } catch (e) {
+      if (!mounted) return;
+      _showResultDialog(
+        title: 'Diagnostics Failed',
+        message: 'Error: $e',
+        isSuccess: false,
+      );
+    }
+  }
+
   // --- Helpers ---
 
   void _showResultDialog({
@@ -462,6 +498,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             subtitle: 'Verify documents and file references',
             isLoading: _isChecking,
             onTap: _isChecking ? null : _runIntegrityCheck,
+          ),
+          const SizedBox(height: 8),
+
+          _ActionTile(
+            icon: Icons.bug_report_rounded,
+            iconColor: AppColors.warning,
+            title: 'Document Diagnostics',
+            subtitle: 'Show file storage paths and status',
+            isLoading: false,
+            onTap: _runDocDiagnostics,
           ),
           const SizedBox(height: 32),
         ],

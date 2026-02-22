@@ -78,6 +78,34 @@ class DocumentService {
     return File(resolvePathSync(localPath)).existsSync();
   }
 
+  /// Returns diagnostic info about the document storage for debugging.
+  static Future<String> diagnostics() async {
+    final buf = StringBuffer();
+    final appDir = await _appDir;
+    buf.writeln('App dir: $appDir');
+    buf.writeln('Cached dir: $_cachedAppDir');
+
+    final docsDir = Directory(p.join(appDir, _docsFolder));
+    final exists = await docsDir.exists();
+    buf.writeln('Docs folder exists: $exists');
+
+    if (exists) {
+      final files = await docsDir.list().toList();
+      buf.writeln('Files in folder: ${files.length}');
+      for (final f in files) {
+        final name = p.basename(f.path);
+        if (f is File) {
+          final stat = await f.stat();
+          buf.writeln('  $name (${stat.size} bytes)');
+        } else {
+          buf.writeln('  $name (dir)');
+        }
+      }
+    }
+
+    return buf.toString();
+  }
+
   static String getFileType(String path) {
     final ext = p.extension(path).toLowerCase();
     return switch (ext) {
