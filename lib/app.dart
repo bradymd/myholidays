@@ -352,13 +352,15 @@ class _ImportListenerState extends ConsumerState<_ImportListener> {
   Future<void> _handleFile(String filePath) async {
     if (_isImporting) return;
 
+    final navContext = _rootNavigatorKey.currentContext;
+    if (navContext == null) return;
+
     ShareFilePreview preview;
     try {
       preview = await HolidayShareService.parseFile(filePath);
     } on FormatException catch (e) {
-      if (!mounted) return;
       showDialog(
-        context: context,
+        context: navContext,
         builder: (ctx) => AlertDialog(
           title: const Text('Cannot Import'),
           content: Text(e.message),
@@ -372,9 +374,8 @@ class _ImportListenerState extends ConsumerState<_ImportListener> {
       );
       return;
     } catch (e) {
-      if (!mounted) return;
       showDialog(
-        context: context,
+        context: navContext,
         builder: (ctx) => AlertDialog(
           title: const Text('Cannot Import'),
           content: Text('$e'),
@@ -388,8 +389,6 @@ class _ImportListenerState extends ConsumerState<_ImportListener> {
       );
       return;
     }
-
-    if (!mounted) return;
 
     final counts = <String>[];
     if (preview.travelers > 0) {
@@ -419,7 +418,7 @@ class _ImportListenerState extends ConsumerState<_ImportListener> {
         : null;
 
     final confirmed = await showDialog<bool>(
-      context: context,
+      context: navContext,
       barrierDismissible: false,
       builder: (ctx) => AlertDialog(
         title: const Text('Import Holiday?'),
@@ -479,9 +478,10 @@ class _ImportListenerState extends ConsumerState<_ImportListener> {
 
       _router.go('/holiday/$newHolidayId');
     } catch (e) {
-      if (!mounted) return;
+      final errContext = _rootNavigatorKey.currentContext;
+      if (errContext == null) return;
       showDialog(
-        context: context,
+        context: errContext,
         builder: (ctx) => AlertDialog(
           title: const Text('Import Failed'),
           content: Text('Error: $e'),
