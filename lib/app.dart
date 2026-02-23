@@ -352,21 +352,20 @@ class _ImportListenerState extends ConsumerState<_ImportListener> {
   Future<void> _handleFile(String filePath) async {
     if (_isImporting) return;
 
-    final navContext = _rootNavigatorKey.currentContext;
-    if (navContext == null) return;
-
     ShareFilePreview preview;
     try {
       preview = await HolidayShareService.parseFile(filePath);
     } on FormatException catch (e) {
+      final ctx = _rootNavigatorKey.currentContext;
+      if (ctx == null) return;
       showDialog(
-        context: navContext,
-        builder: (ctx) => AlertDialog(
+        context: ctx,
+        builder: (dCtx) => AlertDialog(
           title: const Text('Cannot Import'),
           content: Text(e.message),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(ctx),
+              onPressed: () => Navigator.pop(dCtx),
               child: const Text('OK'),
             ),
           ],
@@ -374,14 +373,16 @@ class _ImportListenerState extends ConsumerState<_ImportListener> {
       );
       return;
     } catch (e) {
+      final ctx = _rootNavigatorKey.currentContext;
+      if (ctx == null) return;
       showDialog(
-        context: navContext,
-        builder: (ctx) => AlertDialog(
+        context: ctx,
+        builder: (dCtx) => AlertDialog(
           title: const Text('Cannot Import'),
           content: Text('$e'),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(ctx),
+              onPressed: () => Navigator.pop(dCtx),
               child: const Text('OK'),
             ),
           ],
@@ -416,6 +417,9 @@ class _ImportListenerState extends ConsumerState<_ImportListener> {
     final dateRange = (preview.startDate.isNotEmpty || preview.endDate.isNotEmpty)
         ? '${formatDateUK(preview.startDate)} - ${formatDateUK(preview.endDate)}'
         : null;
+
+    final navContext = _rootNavigatorKey.currentContext;
+    if (navContext == null) return;
 
     final confirmed = await showDialog<bool>(
       context: navContext,
@@ -478,16 +482,16 @@ class _ImportListenerState extends ConsumerState<_ImportListener> {
 
       _router.go('/holiday/$newHolidayId');
     } catch (e) {
-      final errContext = _rootNavigatorKey.currentContext;
-      if (errContext == null) return;
+      final errCtx = _rootNavigatorKey.currentContext;
+      if (errCtx == null || !mounted) return;
       showDialog(
-        context: errContext,
-        builder: (ctx) => AlertDialog(
+        context: errCtx,
+        builder: (dCtx) => AlertDialog(
           title: const Text('Import Failed'),
           content: Text('Error: $e'),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(ctx),
+              onPressed: () => Navigator.pop(dCtx),
               child: const Text('OK'),
             ),
           ],
