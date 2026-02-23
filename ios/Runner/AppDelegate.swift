@@ -5,6 +5,8 @@ import UIKit
 @objc class AppDelegate: FlutterAppDelegate {
   private let channelName = "com.bradymd.my_holidays/share"
   private var initialFilePath: String?
+  /// Set to true once Dart calls getInitialFile, meaning the Dart side is ready.
+  private var flutterReady = false
 
   override func application(
     _ application: UIApplication,
@@ -12,10 +14,16 @@ import UIKit
   ) -> Bool {
     GeneratedPluginRegistrant.register(with: self)
 
+    // Check for file URL in launch options (cold start via "Open in")
+    if let url = launchOptions?[.url] as? URL {
+      initialFilePath = url.path
+    }
+
     let controller = window?.rootViewController as! FlutterViewController
     let channel = FlutterMethodChannel(name: channelName, binaryMessenger: controller.binaryMessenger)
     channel.setMethodCallHandler { [weak self] (call, result) in
       if call.method == "getInitialFile" {
+        self?.flutterReady = true
         result(self?.initialFilePath)
         self?.initialFilePath = nil
       } else {
@@ -31,13 +39,17 @@ import UIKit
     open url: URL,
     options: [UIApplication.OpenURLOptionsKey: Any] = [:]
   ) -> Bool {
-    guard let controller = window?.rootViewController as? FlutterViewController else {
-      initialFilePath = url.path
-      return true
+    let path = url.path
+
+    if flutterReady, let controller = window?.rootViewController as? FlutterViewController {
+      // Dart is running — send the file path immediately
+      let channel = FlutterMethodChannel(name: channelName, binaryMessenger: controller.binaryMessenger)
+      channel.invokeMethod("openFile", arguments: path)
+    } else {
+      // Dart isn't ready yet (cold start) — store for getInitialFile
+      initialFilePath = path
     }
 
-    let channel = FlutterMethodChannel(name: channelName, binaryMessenger: controller.binaryMessenger)
-    channel.invokeMethod("openFile", arguments: url.path)
     return true
   }
 }
