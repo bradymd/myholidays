@@ -19,6 +19,7 @@ class AboutScreen extends ConsumerWidget {
     return AppScaffold(
       title: 'About',
       useOverlayNav: true,
+      showBackButton: true,
       body: ListView(
         padding: const EdgeInsets.fromLTRB(24, 32, 24, 80),
         children: [

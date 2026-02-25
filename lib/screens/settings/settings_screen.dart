@@ -398,6 +398,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   Widget build(BuildContext context) {
     return AppScaffold(
       useOverlayNav: true,
+      showBackButton: true,
       title: 'Settings & Tools',
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 20, 20, 80),

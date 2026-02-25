@@ -80,7 +80,7 @@ class AppScaffold extends StatelessWidget {
                       tooltip: 'Back',
                     )
                   else
-                    const Icon(Icons.home_rounded, color: AppColors.primary, size: 28),
+                    const SizedBox(width: 42),
                   Expanded(
                     child: title.isNotEmpty
                         ? Text(
@@ -289,7 +289,7 @@ class AppScaffold extends StatelessWidget {
   }
 }
 
-/// Wraps a child widget in a gentle pulsing scale animation.
+/// Wraps a child widget in a pulsing glow + scale animation to draw attention.
 class _PulsingButton extends StatefulWidget {
   const _PulsingButton({required this.child});
 
@@ -303,15 +303,19 @@ class _PulsingButtonState extends State<_PulsingButton>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
   late final Animation<double> _scale;
+  late final Animation<double> _glow;
 
   @override
   void initState() {
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1500),
+      duration: const Duration(milliseconds: 1200),
     )..repeat(reverse: true);
-    _scale = Tween<double>(begin: 0.95, end: 1.15).animate(
+    _scale = Tween<double>(begin: 1.0, end: 1.18).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+    _glow = Tween<double>(begin: 0.0, end: 16.0).animate(
       CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
     );
   }
@@ -324,7 +328,23 @@ class _PulsingButtonState extends State<_PulsingButton>
 
   @override
   Widget build(BuildContext context) {
-    return ScaleTransition(scale: _scale, child: widget.child);
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) => Container(
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.primary.withValues(alpha: 0.5),
+              blurRadius: _glow.value,
+              spreadRadius: _glow.value / 3,
+            ),
+          ],
+        ),
+        child: ScaleTransition(scale: _scale, child: child),
+      ),
+      child: widget.child,
+    );
   }
 }
 
