@@ -133,7 +133,10 @@ class AppScaffold extends StatelessWidget {
         icon: overlayFabIcon!,
         tooltip: 'Action',
       );
-      actionButton = overlayFabPulse ? _PulsingButton(child: btn) : btn;
+      actionButton = KeyedSubtree(
+        key: ValueKey(overlayFabPulse),
+        child: overlayFabPulse ? _PulsingButton(child: btn) : btn,
+      );
     }
 
     if (homeButton != null || actionButton != null) {

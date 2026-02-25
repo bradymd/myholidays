@@ -210,7 +210,7 @@ class _HolidayDetailScreenState extends ConsumerState<HolidayDetailScreen> {
           overlayFabIcon: Icons.edit_rounded,
           overlayFabOnPressed: () =>
               context.push('/edit-holiday/${widget.holidayId}'),
-          overlayFabPulse: true, // TODO: revert to isEmpty after testing
+          overlayFabPulse: isEmpty,
           body: SingleChildScrollView(
             padding: const EdgeInsets.all(16),
             child: Column(
