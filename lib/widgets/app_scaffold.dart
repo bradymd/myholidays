@@ -289,7 +289,7 @@ class AppScaffold extends StatelessWidget {
   }
 }
 
-/// Wraps a child widget in a pulsing glow + scale animation to draw attention.
+/// Draws attention to a button with a pulsing ring and scale bounce.
 class _PulsingButton extends StatefulWidget {
   const _PulsingButton({required this.child});
 
@@ -302,22 +302,14 @@ class _PulsingButton extends StatefulWidget {
 class _PulsingButtonState extends State<_PulsingButton>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
-  late final Animation<double> _scale;
-  late final Animation<double> _glow;
 
   @override
   void initState() {
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1200),
+      duration: const Duration(milliseconds: 1000),
     )..repeat(reverse: true);
-    _scale = Tween<double>(begin: 1.0, end: 1.18).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
-    _glow = Tween<double>(begin: 0.0, end: 16.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
   }
 
   @override
@@ -330,20 +322,41 @@ class _PulsingButtonState extends State<_PulsingButton>
   Widget build(BuildContext context) {
     return AnimatedBuilder(
       animation: _controller,
-      builder: (context, child) => Container(
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.primary.withValues(alpha: 0.5),
-              blurRadius: _glow.value,
-              spreadRadius: _glow.value / 3,
-            ),
-          ],
-        ),
-        child: ScaleTransition(scale: _scale, child: child),
-      ),
-      child: widget.child,
+      builder: (context, _) {
+        final t = _controller.value;
+        final scale = 1.0 + (t * 0.2);
+        final ringSize = 52.0 + (t * 20.0);
+        final ringOpacity = 0.6 - (t * 0.5);
+
+        return SizedBox(
+          width: 72,
+          height: 72,
+          child: Stack(
+            alignment: Alignment.center,
+            clipBehavior: Clip.none,
+            children: [
+              // Expanding ring
+              Container(
+                width: ringSize,
+                height: ringSize,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: AppColors.primary
+                        .withValues(alpha: ringOpacity.clamp(0.0, 1.0)),
+                    width: 3,
+                  ),
+                ),
+              ),
+              // The button itself, scaled
+              Transform.scale(
+                scale: scale,
+                child: widget.child,
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
