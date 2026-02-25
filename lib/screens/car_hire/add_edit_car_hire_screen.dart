@@ -234,6 +234,8 @@ class _AddEditCarHireScreenState extends ConsumerState<AddEditCarHireScreen> {
       title: _isEdit ? 'Edit Car Hire' : 'Add Car Hire',
       useOverlayNav: true,
       showBackButton: true,
+      overlayFabIcon: Icons.check_rounded,
+      overlayFabOnPressed: _saving ? null : _save,
       body: carHireAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('Error: $e')),
@@ -243,13 +245,11 @@ class _AddEditCarHireScreenState extends ConsumerState<AddEditCarHireScreen> {
   }
 
   Widget _buildForm() {
-    return Stack(
-      children: [
-        SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Form(
-            key: _formKey,
-            child: Card(
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Form(
+        key: _formKey,
+        child: Card(
               clipBehavior: Clip.antiAlias,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
@@ -477,40 +477,10 @@ class _AddEditCarHireScreenState extends ConsumerState<AddEditCarHireScreen> {
                       const SizedBox(height: 80),
                     ],
                   ),
-                ),
               ),
             ),
           ),
         ),
-        Positioned(
-          right: 16,
-          bottom: 16,
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.75),
-              shape: BoxShape.circle,
-              boxShadow: const [
-                BoxShadow(
-                  color: Colors.black12,
-                  blurRadius: 4,
-                  offset: Offset(0, 2),
-                ),
-              ],
-            ),
-            child: IconButton(
-              onPressed: _saving ? null : _save,
-              tooltip: _isEdit ? 'Save' : 'Add',
-              icon: const Icon(
-                Icons.check_rounded,
-                color: Colors.white,
-                size: 22,
-              ),
-              padding: const EdgeInsets.all(10),
-              constraints: const BoxConstraints(),
-            ),
-          ),
-        ),
-      ],
     );
   }
 }

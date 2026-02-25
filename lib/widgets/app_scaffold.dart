@@ -23,6 +23,7 @@ class AppScaffold extends StatelessWidget {
     this.useOverlayNav = false,
     this.overlayFabIcon,
     this.overlayFabOnPressed,
+    this.overlayFabPulse = false,
     this.extraMenuItems,
     this.onExtraMenuSelected,
   });
@@ -43,6 +44,7 @@ class AppScaffold extends StatelessWidget {
   final bool useOverlayNav;
   final IconData? overlayFabIcon;
   final VoidCallback? overlayFabOnPressed;
+  final bool overlayFabPulse;
   final List<PopupMenuEntry<String>>? extraMenuItems;
   final ValueChanged<String>? onExtraMenuSelected;
 
@@ -64,11 +66,21 @@ class AppScaffold extends StatelessWidget {
               padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
               child: Row(
                 children: [
-                  _overlayButton(
-                    onPressed: () => context.go('/'),
-                    icon: Icons.home_rounded,
-                    tooltip: 'Home',
-                  ),
+                  if (showBackButton && !isHome)
+                    _overlayButton(
+                      onPressed: onBack ??
+                          () {
+                            if (GoRouter.of(context).canPop()) {
+                              context.pop();
+                            } else {
+                              context.go('/');
+                            }
+                          },
+                      icon: Icons.arrow_back_rounded,
+                      tooltip: 'Back',
+                    )
+                  else
+                    const Icon(Icons.home_rounded, color: AppColors.primary, size: 28),
                   Expanded(
                     child: title.isNotEmpty
                         ? Text(
@@ -106,36 +118,31 @@ class AppScaffold extends StatelessWidget {
   }
 
   Widget? _buildOverlayFabs(BuildContext context) {
-    final backButton = showBackButton
+    final homeButton = !isHome
         ? _overlayButton(
-            onPressed: onBack ??
-                () {
-                  if (GoRouter.of(context).canPop()) {
-                    context.pop();
-                  } else {
-                    context.go('/');
-                  }
-                },
-            icon: Icons.arrow_back_rounded,
-            tooltip: 'Back',
+            onPressed: () => context.go('/'),
+            icon: Icons.home_rounded,
+            tooltip: 'Home',
           )
         : null;
 
-    final actionButton = overlayFabIcon != null && overlayFabOnPressed != null
-        ? _overlayButton(
-            onPressed: overlayFabOnPressed!,
-            icon: overlayFabIcon!,
-            tooltip: 'Action',
-          )
-        : null;
+    Widget? actionButton;
+    if (overlayFabIcon != null && overlayFabOnPressed != null) {
+      final btn = _overlayButton(
+        onPressed: overlayFabOnPressed!,
+        icon: overlayFabIcon!,
+        tooltip: 'Action',
+      );
+      actionButton = overlayFabPulse ? _PulsingButton(child: btn) : btn;
+    }
 
-    if (backButton != null || actionButton != null) {
+    if (homeButton != null || actionButton != null) {
       return Padding(
         padding: const EdgeInsets.symmetric(horizontal: 12),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            backButton ?? const SizedBox(width: 42),
+            homeButton ?? const SizedBox(width: 42),
             actionButton ?? const SizedBox(width: 42),
           ],
         ),
@@ -279,6 +286,45 @@ class AppScaffold extends StatelessWidget {
       onPressed: () => context.go('/'),
       tooltip: 'Home',
     );
+  }
+}
+
+/// Wraps a child widget in a gentle pulsing scale animation.
+class _PulsingButton extends StatefulWidget {
+  const _PulsingButton({required this.child});
+
+  final Widget child;
+
+  @override
+  State<_PulsingButton> createState() => _PulsingButtonState();
+}
+
+class _PulsingButtonState extends State<_PulsingButton>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _scale;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1500),
+    )..repeat(reverse: true);
+    _scale = Tween<double>(begin: 0.95, end: 1.15).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ScaleTransition(scale: _scale, child: widget.child);
   }
 }
 

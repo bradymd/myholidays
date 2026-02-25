@@ -229,12 +229,12 @@ class _AddEditAccommodationScreenState
       title: _isEditing ? 'Edit Accommodation' : 'Add Accommodation',
       useOverlayNav: true,
       showBackButton: true,
+      overlayFabIcon: Icons.check_rounded,
+      overlayFabOnPressed: _isLoading ? null : _save,
       body: accommodationsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('Error: $e')),
-        data: (_) => Stack(
-          children: [
-            SingleChildScrollView(
+        data: (_) => SingleChildScrollView(
               padding: const EdgeInsets.all(16),
               child: Form(
                 key: _formKey,
@@ -442,40 +442,10 @@ class _AddEditAccommodationScreenState
                       ),
                     ),
                   ),
-                ),
               ),
             ),
-            Positioned(
-              right: 16,
-              bottom: 16,
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.75),
-                  shape: BoxShape.circle,
-                  boxShadow: const [
-                    BoxShadow(
-                      color: Colors.black12,
-                      blurRadius: 4,
-                      offset: Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: IconButton(
-                  onPressed: _isLoading ? null : _save,
-                  tooltip: _isEditing ? 'Save' : 'Add',
-                  icon: const Icon(
-                    Icons.check_rounded,
-                    color: Colors.white,
-                    size: 22,
-                  ),
-                  padding: const EdgeInsets.all(10),
-                  constraints: const BoxConstraints(),
-                ),
-              ),
-            ),
-          ],
+          ),
         ),
-      ),
     );
   }
 

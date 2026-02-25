@@ -236,13 +236,13 @@ class _AddEditHolidayScreenState extends ConsumerState<AddEditHolidayScreen> {
       title: isEditing ? '' : 'Add Holiday',
       useOverlayNav: true,
       showBackButton: true,
-      body: Stack(
-        children: [
-          Form(
-            key: _formKey,
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Card(
+      overlayFabIcon: Icons.check_rounded,
+      overlayFabOnPressed: _save,
+      body: Form(
+        key: _formKey,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Card(
                 child: Padding(
                   padding: const EdgeInsets.all(16),
                   child: Column(
@@ -482,31 +482,9 @@ class _AddEditHolidayScreenState extends ConsumerState<AddEditHolidayScreen> {
                     ],
                   ),
                 ),
-              ),
             ),
           ),
-          Positioned(
-            right: 16,
-            bottom: 16,
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.75),
-                shape: BoxShape.circle,
-                boxShadow: const [
-                  BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2)),
-                ],
-              ),
-              child: IconButton(
-                onPressed: _save,
-                tooltip: isEditing ? 'Save' : 'Add',
-                icon: const Icon(Icons.check_rounded, color: Colors.white, size: 22),
-                padding: const EdgeInsets.all(10),
-                constraints: const BoxConstraints(),
-              ),
-            ),
-          ),
-        ],
-      ),
+        ),
     );
   }
 }
