@@ -195,13 +195,6 @@ class _HolidayDetailScreenState extends ConsumerState<HolidayDetailScreen> {
           );
         }
 
-        final isEmpty = travelers.isEmpty &&
-            accommodations.isEmpty &&
-            travelLegs.isEmpty &&
-            carHires.isEmpty &&
-            activities.isEmpty &&
-            itineraryDays.isEmpty;
-
         return AppScaffold(
           useOverlayNav: true,
           showBackButton: true,
@@ -210,7 +203,6 @@ class _HolidayDetailScreenState extends ConsumerState<HolidayDetailScreen> {
           overlayFabIcon: Icons.edit_rounded,
           overlayFabOnPressed: () =>
               context.push('/edit-holiday/${widget.holidayId}'),
-          overlayFabPulse: isEmpty,
           body: SingleChildScrollView(
             padding: const EdgeInsets.all(16),
             child: Column(

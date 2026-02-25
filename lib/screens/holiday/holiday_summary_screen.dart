@@ -599,11 +599,19 @@ class _HolidaySummaryScreenState extends ConsumerState<HolidaySummaryScreen> {
       data: (holidays) {
         _holiday = holidays.where((h) => h.id == hId).firstOrNull;
 
+        final isEmpty = _travelers.isEmpty &&
+            _accommodations.isEmpty &&
+            _travelLegs.isEmpty &&
+            _carHires.isEmpty &&
+            _activities.isEmpty &&
+            _itineraryDays.isEmpty;
+
         return AppScaffold(
           useOverlayNav: true,
           showBackButton: true,
           title: '',
           overlayFabIcon: Icons.edit_rounded,
+          overlayFabPulse: isEmpty,
           overlayFabOnPressed: () => context.push(
             '/holiday-manage/${widget.holidayId}',
           ),
