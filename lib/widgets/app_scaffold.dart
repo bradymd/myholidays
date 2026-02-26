@@ -24,6 +24,7 @@ class AppScaffold extends StatelessWidget {
     this.overlayFabIcon,
     this.overlayFabOnPressed,
     this.overlayFabPulse = false,
+    this.showHomeButton = true,
     this.extraMenuItems,
     this.onExtraMenuSelected,
   });
@@ -45,6 +46,7 @@ class AppScaffold extends StatelessWidget {
   final IconData? overlayFabIcon;
   final VoidCallback? overlayFabOnPressed;
   final bool overlayFabPulse;
+  final bool showHomeButton;
   final List<PopupMenuEntry<String>>? extraMenuItems;
   final ValueChanged<String>? onExtraMenuSelected;
 
@@ -118,7 +120,7 @@ class AppScaffold extends StatelessWidget {
   }
 
   Widget? _buildOverlayFabs(BuildContext context) {
-    final homeButton = !isHome
+    final homeButton = (!isHome && showHomeButton)
         ? _overlayButton(
             onPressed: () => context.go('/'),
             icon: Icons.home_rounded,

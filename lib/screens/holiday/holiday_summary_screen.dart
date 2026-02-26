@@ -609,6 +609,7 @@ class _HolidaySummaryScreenState extends ConsumerState<HolidaySummaryScreen> {
         return AppScaffold(
           useOverlayNav: true,
           showBackButton: true,
+          showHomeButton: false,
           title: '',
           overlayFabIcon: Icons.edit_rounded,
           overlayFabPulse: isEmpty,
