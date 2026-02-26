@@ -6,6 +6,7 @@ import 'package:my_holidays/providers/document_provider.dart';
 import 'package:my_holidays/providers/traveler_provider.dart';
 import 'package:my_holidays/theme/app_text_styles.dart';
 import 'package:my_holidays/widgets/app_scaffold.dart';
+import 'package:my_holidays/widgets/linkified_text.dart';
 import 'package:my_holidays/models/document_ref.dart';
 import 'package:my_holidays/widgets/doc_count_badge.dart';
 import 'package:my_holidays/widgets/empty_state.dart';
@@ -138,7 +139,7 @@ class _TravelerCard extends StatelessWidget {
                     ),
                     if (traveler.notes.isNotEmpty) ...[
                       const SizedBox(height: 4),
-                      Text(
+                      LinkifiedText(
                         traveler.notes,
                         style: AppTextStyles.caption,
                         maxLines: 2,

@@ -20,6 +20,7 @@ import 'package:my_holidays/utils/currency_helpers.dart';
 import 'package:my_holidays/utils/date_helpers.dart';
 import 'package:my_holidays/models/document_ref.dart';
 import 'package:my_holidays/widgets/app_scaffold.dart';
+import 'package:my_holidays/widgets/linkified_text.dart';
 import 'package:my_holidays/widgets/doc_count_badge.dart';
 import 'package:my_holidays/widgets/shimmer_loading.dart';
 
@@ -347,7 +348,7 @@ class _HolidayDetailScreenState extends ConsumerState<HolidayDetailScreen> {
                               const SizedBox(height: 6),
                               Padding(
                                 padding: const EdgeInsets.only(left: 48),
-                                child: Text(
+                                child: LinkifiedText(
                                   holiday.notes,
                                   style: AppTextStyles.body.copyWith(
                                     color: AppColors.textSecondary,

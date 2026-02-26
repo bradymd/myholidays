@@ -9,6 +9,7 @@ import 'package:my_holidays/theme/app_colors.dart';
 import 'package:my_holidays/theme/app_text_styles.dart';
 import 'package:my_holidays/utils/id_generator.dart';
 import 'package:path/path.dart' as p;
+import 'package:url_launcher/url_launcher.dart';
 
 class DocumentAttachments extends ConsumerStatefulWidget {
   const DocumentAttachments({
@@ -100,6 +101,16 @@ class _DocumentAttachmentsState extends ConsumerState<DocumentAttachments> {
                   _pickFile();
                 },
               ),
+              ListTile(
+                leading: const Icon(Icons.link_rounded,
+                    color: AppColors.primary),
+                title: const Text('Add Link'),
+                subtitle: const Text('Website or booking URL'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _addLink();
+                },
+              ),
             ],
           ),
         ),
@@ -185,6 +196,88 @@ class _DocumentAttachmentsState extends ConsumerState<DocumentAttachments> {
     _loadDocs();
   }
 
+  Future<void> _addLink() async {
+    final urlController = TextEditingController();
+    final labelController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Add Link'),
+        content: Form(
+          key: formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextFormField(
+                controller: urlController,
+                keyboardType: TextInputType.url,
+                decoration: const InputDecoration(
+                  labelText: 'URL',
+                  hintText: 'https://',
+                ),
+                validator: (v) {
+                  if (v == null || v.isEmpty) return 'Enter a URL';
+                  if (!v.startsWith('http://') && !v.startsWith('https://')) {
+                    return 'Must start with http:// or https://';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: labelController,
+                decoration: const InputDecoration(
+                  labelText: 'Label (optional)',
+                  hintText: 'e.g. Booking confirmation',
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              if (formKey.currentState!.validate()) {
+                Navigator.pop(ctx, true);
+              }
+            },
+            child: const Text('Add'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    final url = urlController.text.trim();
+    final label = labelController.text.trim().isNotEmpty
+        ? labelController.text.trim()
+        : url;
+
+    final now = DateTime.now();
+    final dateStr =
+        '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+
+    final doc = DocumentRef(
+      id: generateId(),
+      parentType: widget.parentType,
+      parentId: widget.parentId,
+      filename: label,
+      localPath: url,
+      fileType: 'Link',
+      addedDate: dateStr,
+    );
+
+    await ref.read(documentsProvider.notifier).addDocument(doc);
+    _loadDocs();
+  }
+
   void _confirmDelete(DocumentRef doc) {
     showDialog(
       context: context,
@@ -199,7 +292,9 @@ class _DocumentAttachmentsState extends ConsumerState<DocumentAttachments> {
           TextButton(
             onPressed: () async {
               Navigator.pop(ctx);
-              await DocumentService.deleteFile(doc.localPath);
+              if (doc.fileType != 'Link') {
+                await DocumentService.deleteFile(doc.localPath);
+              }
               await ref
                   .read(documentsProvider.notifier)
                   .deleteDocument(doc.id);
@@ -219,6 +314,7 @@ class _DocumentAttachmentsState extends ConsumerState<DocumentAttachments> {
       'Image' => Icons.image_rounded,
       'Document' => Icons.description_rounded,
       'Spreadsheet' => Icons.table_chart_rounded,
+      'Link' => Icons.link_rounded,
       _ => Icons.insert_drive_file_rounded,
     };
   }
@@ -229,6 +325,7 @@ class _DocumentAttachmentsState extends ConsumerState<DocumentAttachments> {
       'Image' => const Color(0xFF43A047),
       'Document' => const Color(0xFF1E88E5),
       'Spreadsheet' => const Color(0xFF2E7D32),
+      'Link' => AppColors.primary,
       _ => AppColors.textMuted,
     };
   }
@@ -294,7 +391,9 @@ class _DocumentAttachmentsState extends ConsumerState<DocumentAttachments> {
         else
           ...List.generate(_docs.length, (i) {
             final doc = _docs[i];
-            final fileExists = DocumentService.fileExistsSync(doc.localPath);
+            final isLink = doc.fileType == 'Link';
+            final fileExists =
+                isLink || DocumentService.fileExistsSync(doc.localPath);
 
             return Card(
               margin: const EdgeInsets.only(bottom: 8),
@@ -319,8 +418,13 @@ class _DocumentAttachmentsState extends ConsumerState<DocumentAttachments> {
                   overflow: TextOverflow.ellipsis,
                 ),
                 subtitle: Text(
-                  doc.addedDate.isNotEmpty ? doc.addedDate : doc.fileType,
+                  isLink
+                      ? doc.localPath
+                      : (doc.addedDate.isNotEmpty
+                          ? doc.addedDate
+                          : doc.fileType),
                   style: AppTextStyles.caption.copyWith(fontSize: 11),
+                  overflow: TextOverflow.ellipsis,
                 ),
                 trailing: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -330,8 +434,11 @@ class _DocumentAttachmentsState extends ConsumerState<DocumentAttachments> {
                         icon:
                             const Icon(Icons.open_in_new_rounded, size: 20),
                         color: AppColors.primary,
-                        onPressed: () =>
-                            DocumentService.openFile(doc.localPath),
+                        onPressed: isLink
+                            ? () => launchUrl(Uri.parse(doc.localPath),
+                                mode: LaunchMode.externalApplication)
+                            : () =>
+                                DocumentService.openFile(doc.localPath),
                         tooltip: 'Open',
                       ),
                     IconButton(
@@ -343,9 +450,12 @@ class _DocumentAttachmentsState extends ConsumerState<DocumentAttachments> {
                     ),
                   ],
                 ),
-                onTap: fileExists
-                    ? () => DocumentService.openFile(doc.localPath)
-                    : null,
+                onTap: isLink
+                    ? () => launchUrl(Uri.parse(doc.localPath),
+                        mode: LaunchMode.externalApplication)
+                    : (fileExists
+                        ? () => DocumentService.openFile(doc.localPath)
+                        : null),
               ),
             );
           }),

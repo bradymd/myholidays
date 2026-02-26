@@ -31,6 +31,7 @@ import 'package:my_holidays/theme/app_text_styles.dart';
 import 'package:my_holidays/utils/currency_helpers.dart';
 import 'package:my_holidays/utils/date_helpers.dart';
 import 'package:my_holidays/widgets/app_scaffold.dart';
+import 'package:my_holidays/widgets/linkified_text.dart';
 import 'package:my_holidays/widgets/shimmer_loading.dart';
 
 class HolidaySummaryScreen extends ConsumerStatefulWidget {
@@ -782,7 +783,7 @@ class _HolidaySummaryScreenState extends ConsumerState<HolidaySummaryScreen> {
             ],
             if (h.notes.isNotEmpty) ...[
               const SizedBox(height: 10),
-              Text(
+              LinkifiedText(
                 h.notes,
                 style: AppTextStyles.body.copyWith(
                   color: AppColors.textSecondary,
@@ -1158,7 +1159,7 @@ class _HolidaySummaryScreenState extends ConsumerState<HolidaySummaryScreen> {
                     const SizedBox(height: 6),
                     Padding(
                       padding: const EdgeInsets.only(left: 42),
-                      child: Text(
+                      child: LinkifiedText(
                         day.notes,
                         style: AppTextStyles.caption.copyWith(
                           color: AppColors.textMuted,
@@ -1564,7 +1565,7 @@ class _SummaryRow extends StatelessWidget {
             ),
           ),
           Expanded(
-            child: Text(
+            child: LinkifiedText(
               value,
               style: AppTextStyles.body.copyWith(fontSize: 13),
             ),
