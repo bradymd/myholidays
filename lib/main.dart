@@ -41,6 +41,10 @@ class _AppLifecycleWrapperState extends State<_AppLifecycleWrapper>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      setState(() {});
+      return;
+    }
     // Include `hidden` — on desktop it fires before `paused` and gives the
     // async I/O more time to complete before the engine shuts down.
     if (state == AppLifecycleState.paused ||

@@ -79,6 +79,9 @@ class AppTheme {
         elevation: 4,
         shape: CircleBorder(),
       ),
+      datePickerTheme: DatePickerThemeData(
+        rangeSelectionBackgroundColor: AppColors.primaryLight.withValues(alpha: 0.45),
+      ),
       dividerTheme: DividerThemeData(
         color: Colors.grey.shade100,
         thickness: 1,

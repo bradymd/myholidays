@@ -159,44 +159,46 @@ class _AddEditHolidayScreenState extends ConsumerState<AddEditHolidayScreen> {
   // Date picking
   // ---------------------------------------------------------------------------
 
-  Future<void> _pickDate({required bool isStart}) async {
+  Future<void> _pickDateRange() async {
     final now = DateTime.now();
-    final currentValue = isStart ? _startDate : _endDate;
-    final initial = currentValue.isNotEmpty
-        ? (DateTime.tryParse(currentValue) ?? now)
+    final start = _startDate.isNotEmpty
+        ? (DateTime.tryParse(_startDate) ?? now)
         : now;
+    final end = _endDate.isNotEmpty
+        ? (DateTime.tryParse(_endDate) ?? now.add(const Duration(days: 7)))
+        : now.add(const Duration(days: 7));
 
-    final picked = await showDatePicker(
+    final initialRange =
+        _startDate.isNotEmpty && _endDate.isNotEmpty
+            ? DateTimeRange(start: start, end: end)
+            : null;
+
+    final picked = await showDateRangePicker(
       context: context,
-      initialDate: initial,
       firstDate: DateTime(2000),
       lastDate: DateTime(2100),
+      initialDateRange: initialRange,
       locale: const Locale('en', 'GB'),
     );
     if (picked == null) return;
 
-    final formatted = DateFormat('yyyy-MM-dd').format(picked);
+    final fmt = DateFormat('yyyy-MM-dd');
     setState(() {
-      if (isStart) {
-        _startDate = formatted;
-        // If end date is before start date, clear it
-        if (_endDate.isNotEmpty) {
-          final end = DateTime.tryParse(_endDate);
-          if (end != null && end.isBefore(picked)) {
-            _endDate = '';
-          }
-        }
-      } else {
-        _endDate = formatted;
-      }
+      _startDate = fmt.format(picked.start);
+      _endDate = fmt.format(picked.end);
     });
   }
 
-  String _formatForDisplay(String isoDate) {
-    if (isoDate.isEmpty) return 'Select date';
-    final d = DateTime.tryParse(isoDate);
-    if (d == null) return isoDate;
-    return DateFormat('dd/MM/yyyy').format(d);
+  String _formatRangeForDisplay() {
+    if (_startDate.isEmpty && _endDate.isEmpty) return 'Select dates';
+    final fmt = DateFormat('dd/MM/yyyy');
+    final s = _startDate.isNotEmpty
+        ? fmt.format(DateTime.parse(_startDate))
+        : '...';
+    final e = _endDate.isNotEmpty
+        ? fmt.format(DateTime.parse(_endDate))
+        : '...';
+    return '$s  →  $e';
   }
 
   // ---------------------------------------------------------------------------
@@ -259,24 +261,15 @@ class _AddEditHolidayScreenState extends ConsumerState<AddEditHolidayScreen> {
                       ),
                       const SizedBox(height: 16),
 
-                      // Start date
-                      _DateField(
-                        label: 'Start Date',
-                        value: _formatForDisplay(_startDate),
-                        onTap: () => _pickDate(isStart: true),
-                        onClear: _startDate.isNotEmpty
-                            ? () => setState(() => _startDate = '')
-                            : null,
-                      ),
-                      const SizedBox(height: 16),
-
-                      // End date
-                      _DateField(
-                        label: 'End Date',
-                        value: _formatForDisplay(_endDate),
-                        onTap: () => _pickDate(isStart: false),
-                        onClear: _endDate.isNotEmpty
-                            ? () => setState(() => _endDate = '')
+                      // Date range
+                      _DateRangeField(
+                        value: _formatRangeForDisplay(),
+                        onTap: _pickDateRange,
+                        onClear: (_startDate.isNotEmpty || _endDate.isNotEmpty)
+                            ? () => setState(() {
+                                  _startDate = '';
+                                  _endDate = '';
+                                })
                             : null,
                       ),
                       const SizedBox(height: 16),
@@ -490,18 +483,16 @@ class _AddEditHolidayScreenState extends ConsumerState<AddEditHolidayScreen> {
 }
 
 // ---------------------------------------------------------------------------
-// Tappable date field widget
+// Tappable date-range field widget
 // ---------------------------------------------------------------------------
 
-class _DateField extends StatelessWidget {
-  const _DateField({
-    required this.label,
+class _DateRangeField extends StatelessWidget {
+  const _DateRangeField({
     required this.value,
     required this.onTap,
     this.onClear,
   });
 
-  final String label;
   final String value;
   final VoidCallback onTap;
   final VoidCallback? onClear;
@@ -514,7 +505,7 @@ class _DateField extends StatelessWidget {
       borderRadius: BorderRadius.circular(12),
       child: InputDecorator(
         decoration: InputDecoration(
-          labelText: label,
+          labelText: 'Dates',
           suffixIcon: hasValue
               ? IconButton(
                   icon: const Icon(Icons.clear_rounded, size: 18),
