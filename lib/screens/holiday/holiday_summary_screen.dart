@@ -706,7 +706,10 @@ class _HolidaySummaryScreenState extends ConsumerState<HolidaySummaryScreen> {
       elevation: 2,
       shadowColor: AppColors.cardShadow,
       child: InkWell(
-        onTap: () => context.push('/edit-holiday/${widget.holidayId}'),
+        onTap: () async {
+          await context.push('/edit-holiday/${widget.holidayId}');
+          if (mounted) _loadSectionPrefs();
+        },
         child: Container(
         width: double.infinity,
         padding: const EdgeInsets.all(20),

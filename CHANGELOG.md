@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.1 (Build 41)
+
+### Fixed
+- Visible Sections changes now apply immediately when returning from the edit screen (was showing stale cached sections until navigating back to the home screen)
+
 ## 1.0.1 (Build 8)
 
 ### Fixed

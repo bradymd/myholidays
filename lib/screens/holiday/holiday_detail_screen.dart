@@ -202,8 +202,10 @@ class _HolidayDetailScreenState extends ConsumerState<HolidayDetailScreen> {
           title: holiday.name.isNotEmpty ? holiday.name : 'Holiday Details',
           actions: const [],
           overlayFabIcon: Icons.edit_rounded,
-          overlayFabOnPressed: () =>
-              context.push('/edit-holiday/${widget.holidayId}'),
+          overlayFabOnPressed: () async {
+            await context.push('/edit-holiday/${widget.holidayId}');
+            if (mounted) _loadSectionPrefs();
+          },
           body: SingleChildScrollView(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -228,8 +230,10 @@ class _HolidayDetailScreenState extends ConsumerState<HolidayDetailScreen> {
                       ),
                     ),
                     child: InkWell(
-                      onTap: () =>
-                          context.push('/edit-holiday/${widget.holidayId}'),
+                      onTap: () async {
+                        await context.push('/edit-holiday/${widget.holidayId}');
+                        if (mounted) _loadSectionPrefs();
+                      },
                       borderRadius: BorderRadius.circular(16),
                       child: Padding(
                         padding: const EdgeInsets.symmetric(
