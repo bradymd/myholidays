@@ -3,7 +3,10 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 
-const _kProductIds = {'tip_small', 'tip_coffee'};
+const _kProductIds = {
+  'com.bradymd.my_holidays.tip_small',
+  'com.bradymd.my_holidays.tip_coffee',
+};
 
 final tipJarProvider =
     AsyncNotifierProvider<TipJarNotifier, TipJarState>(TipJarNotifier.new);
