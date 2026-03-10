@@ -68,10 +68,11 @@ workflows:
       # ── Build ─────────────────────────────────────────────────────
       - name: Build IPA
         script: |
-          BUILD_NUMBER=$(date +%s)
-          echo "Using build number: $BUILD_NUMBER"
+          BUILD_NAME=$(grep '^version:' pubspec.yaml | sed 's/version: //' | cut -d'+' -f1)
+          BUILD_NUMBER=$(grep '^version:' pubspec.yaml | sed 's/version: //' | cut -d'+' -f2)
+          echo "Using version: $BUILD_NAME+$BUILD_NUMBER"
           flutter build ipa --release \
-            --build-name=1.0.0 \
+            --build-name=$BUILD_NAME \
             --build-number=$BUILD_NUMBER \
             --export-options-plist=/Users/builder/export_options.plist
 
